@@ -4,6 +4,19 @@ import Router from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
 
+// Import our new shadcn components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -13,78 +26,49 @@ export default function SignUpPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   
-  // --- Client-side validation function ---
   const validateForm = () => {
+    // ... (rest of our validation logic is the same)
     setError('');
-    
-    // Check for spaces in username
     if (/\s/.test(username)) {
       setError('Username cannot contain spaces. Please try again.');
       return false;
     }
-    
-    // Simple email check
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Please enter a valid email address.');
       return false;
     }
-    
-    // Password length check
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return false;
     }
-    
-    return true; // All good
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // --- Run our new validation first ---
-    if (!validateForm()) {
-      return; // Stop if validation fails
-    }
-    
+    if (!validateForm()) return;
     setLoading(true);
 
     try {
-      // Step 1: Create the user account
       await axios.post(`${API_URL}/api/users/register/`, {
-        email,
-        username,
-        password,
-        password2: password,
+        email, username, password, password2: password,
       });
-
-      // Step 2: Automatically log the user in
       const response = await axios.post(`${API_URL}/api/auth/token/`, {
-        email,
-        password,
+        email, password,
       });
-
       const { access, refresh } = response.data;
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
-
-      // Step 3: Send to the "Select Plan" page
       Router.push('/plans');
-
     } catch (err) {
       console.error(err);
       if (err.response) {
         const data = err.response.data;
-        if (data.email) {
-          setError(`Email: ${data.email[0]}`);
-        } else if (data.username) {
-          setError(`Username: ${data.username[0]}`);
-        } else if (data.password) {
-          setError(`Password: ${data.password[0]}`);
-        } else if (data.detail) {
-          setError(data.detail);
-        } else {
-          setError('An unknown error occurred. Please try again.');
-        }
+        if (data.email) setError(`Email: ${data.email[0]}`);
+        else if (data.username) setError(`Username: ${data.username[0]}`);
+        else if (data.password) setError(`Password: ${data.password[0]}`);
+        else if (data.detail) setError(data.detail);
+        else setError('An unknown error occurred. Please try again.');
       } else {
         setError('Could not connect to the server. Please try again in 30 seconds.');
       }
@@ -94,85 +78,72 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-neutral-900 text-white">
+    // We are now using the "light" theme from globals.css
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <Head>
         <title>Sign Up | Workspace Africa</title>
       </Head>
-      <div className="w-full max-w-sm p-8">
-        <h1 className="text-3xl font-bold text-center text-white">
-          Create Account
-        </h1>
-        <p className="mt-2 text-sm text-center text-neutral-400">
-          Welcome to Workspace Africa
-        </p>
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>Welcome to Workspace Africa</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="username">Your Name</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="OlaMarcus"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="ola@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            
+            {error && (
+              <p className="text-xs text-center text-red-600">{error}</p>
+            )}
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label htmlFor="username" className="text-sm font-medium text-neutral-300">
-              Your Name
-            </label>
-            <input
-              id="username"
-              type="text"
-              required
-              value={username}
-              // --- THIS IS THE FIX ---
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="text-sm font-medium text-neutral-300">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="text-sm font-medium text-neutral-300">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8} // This is also a form of validation
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
-
-          {error && (
-            <p className="text-xs text-center text-red-500">{error}</p>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-3 font-bold text-white transition-all bg-teal-600 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50"
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating account...' : 'Sign Up'}
-            </button>
-          </div>
-        </form>
-
-        <p className="mt-6 text-sm text-center text-neutral-400">
-          Already have an account?{' '}
-          <Link href="/login" legacyBehavior>
-            <a className="font-medium text-teal-500 hover:text-teal-400">
-              Log In
-            </a>
-          </Link>
-        </p>
-      </div>
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter>
+          <p className="w-full text-sm text-center text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" legacyBehavior>
+              <a className="font-medium text-primary hover:underline">
+                Log In
+              </a>
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

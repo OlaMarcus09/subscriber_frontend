@@ -4,6 +4,8 @@ import Router from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import AppLayout from '../components/AppLayout';
+import { Button } from '@/components/ui/button'; // Using shadcn Button
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'; // Using shadcn Card
 
 export default function AppHome() {
   const [spaces, setSpaces] = useState([]);
@@ -16,23 +18,15 @@ export default function AppHome() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-          Router.push('/login');
-          return;
-        }
+        if (!token) { Router.push('/login'); return; }
         
         const [userRes, spacesRes] = await Promise.all([
-          axios.get(`${API_URL}/api/users/me/`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${API_URL}/api/spaces/`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          axios.get(`${API_URL}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/spaces/`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         setUser(userRes.data);
         setSpaces(spacesRes.data);
-        
       } catch (err) {
         if (err.response && err.response.status === 401) {
           localStorage.clear();
@@ -51,39 +45,43 @@ export default function AppHome() {
         <title>Home | Workspace Africa</title>
       </Head>
 
-      <h1 className="text-3xl font-bold text-neutral-900">
+      <h1 className="text-3xl font-bold text-foreground">
         Good Morning, {user?.username || '...'}
       </h1>
       
-      {/* --- Check-In Button (Teal) --- */}
+      {/* --- Check-In Button (shadcn) --- */}
       <div className="mt-6">
-        <Link href="/checkin" legacyBehavior>
-          <a className="block w-full px-6 py-4 font-bold text-center text-white bg-teal-600 shadow-lg rounded-xl text-lg hover:bg-teal-700">
-            Show My Check-In Key
-          </a>
-        </Link>
+        <Button asChild className="w-full text-lg h-12" size="lg">
+          <Link href="/checkin">Show My Check-In Key</Link>
+        </Button>
       </div>
 
       {/* --- Map Placeholder (light) --- */}
-      <div className="w-full h-48 mt-8 bg-neutral-200 rounded-xl flex items-center justify-center">
-        <p className="text-neutral-500">(Map View Placeholder)</p>
-      </div>
+      <Card className="w-full h-48 mt-8">
+        <CardContent className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">(Map View Placeholder)</p>
+        </CardContent>
+      </Card>
 
-      {/* --- Nearby Spaces List (light) --- */}
+      {/* --- Nearby Spaces List (shadcn) --- */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-neutral-900">Nearby Spaces</h2>
+        <h2 className="text-2xl font-bold text-foreground">Nearby Spaces</h2>
         <div className="mt-4 space-y-4">
           {loading ? (
-            <p className="text-neutral-600">Loading spaces...</p>
+            <p className="text-muted-foreground">Loading spaces...</p>
           ) : (
             spaces.map(space => (
-              <div key={space.id} className="p-4 bg-white shadow rounded-xl border border-neutral-100">
-                <p className="font-bold text-neutral-900">{space.name}</p>
-                <p className="text-sm text-neutral-600">{space.address}</p>
-                <p className="mt-2 text-xs font-medium text-teal-600">
-                  {space.access_tier === 'PREMIUM' ? 'Premium Tier' : 'Standard Tier'}
-                </p>
-              </div>
+              <Card key={space.id}>
+                <CardHeader>
+                  <CardTitle>{space.name}</CardTitle>
+                  <CardDescription>{space.address}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm font-medium text-primary">
+                    {space.access_tier === 'PREMIUM' ? 'Premium Tier' : 'Standard Tier'}
+                  </p>
+                </CardContent>
+              </Card>
             ))
           )}
         </div>

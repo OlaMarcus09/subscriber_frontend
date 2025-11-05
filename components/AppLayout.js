@@ -1,10 +1,8 @@
 import React from 'react';
 import Router from 'next/router';
 import Link from 'next/link';
-
-// We'll get icons for these later
-// const HomeIcon = () => <span>🏠</span>;
-// const UserIcon = () => <span>👤</span>;
+// We'll add icons later
+// import { Home, User, QrCode } from 'lucide-react';
 
 const NavLink = ({ href, children, isActive }) => (
   <Link href={href} legacyBehavior>
@@ -12,7 +10,7 @@ const NavLink = ({ href, children, isActive }) => (
       flex flex-col items-center justify-center flex-1 py-2
       transition-colors
       ${isActive 
-        ? 'text-teal-600'  // Our primary color!
+        ? 'text-primary'  // This is our Deep Teal!
         : 'text-neutral-500 hover:text-neutral-700'
       }
     `}>
@@ -23,8 +21,8 @@ const NavLink = ({ href, children, isActive }) => (
 );
 
 export default function AppLayout({ children, activePage }) {
-  // This is the new "Framer-style" light theme
   return (
+    // New "Framer-style" light theme
     <div className="flex flex-col min-h-screen bg-neutral-50">
       
       {/* --- Light Header with our Logo --- */}
