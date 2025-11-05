@@ -4,90 +4,35 @@ import Router from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
 
-export default function SignUpPage() {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  
-  // --- Client-side validation function ---
-  const validateForm = () => {
-    setError('');
-    
-    // Check for spaces in username
-    if (/\s/.test(username)) {
-      setError('Username cannot contain spaces. Please try again.');
-      return false;
-    }
-    
-    // Simple email check
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
-      return false;
-    }
-    
-    // Password length check
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return false;
-    }
-    
-    return true; // All good
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // --- Run our new validation first ---
-    if (!validateForm()) {
-      return; // Stop if validation fails
-    }
-    
+    setError('');
     setLoading(true);
 
     try {
-      // Step 1: Create the user account
-      await axios.post(`${API_URL}/api/users/register/`, {
-        email,
-        username,
-        password,
-        password2: password,
-      });
-
-      // Step 2: Automatically log the user in
+      // Step 1: Get tokens
       const response = await axios.post(`${API_URL}/api/auth/token/`, {
         email,
         password,
       });
-
+      
       const { access, refresh } = response.data;
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
 
-      // Step 3: Send to the "Select Plan" page
-      Router.push('/plans');
+      // Step 2: Send them to the main app dashboard
+      Router.push('/app'); // We'll create this page next
 
     } catch (err) {
-      console.error(err);
-      if (err.response) {
-        const data = err.response.data;
-        if (data.email) {
-          setError(`Email: ${data.email[0]}`);
-        } else if (data.username) {
-          setError(`Username: ${data.username[0]}`);
-        } else if (data.password) {
-          setError(`Password: ${data.password[0]}`);
-        } else if (data.detail) {
-          setError(data.detail);
-        } else {
-          setError('An unknown error occurred. Please try again.');
-        }
-      } else {
-        setError('Could not connect to the server. Please try again in 30 seconds.');
-      }
+      setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -96,31 +41,17 @@ export default function SignUpPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-neutral-900 text-white">
       <Head>
-        <title>Sign Up | Workspace Africa</title>
+        <title>Log In | Workspace Africa</title>
       </Head>
       <div className="w-full max-w-sm p-8">
         <h1 className="text-3xl font-bold text-center text-white">
-          Create Account
+          Welcome Back
         </h1>
         <p className="mt-2 text-sm text-center text-neutral-400">
-          Welcome to Workspace Africa
+          Sign in to your Workspace Africa account
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label htmlFor="username" className="text-sm font-medium text-neutral-300">
-              Your Name
-            </label>
-            <input
-              id="username"
-              type="text"
-              required
-              value={username}
-              // --- THIS IS THE FIX ---
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
           <div>
             <label htmlFor="email" className="text-sm font-medium text-neutral-300">
               Email Address
@@ -142,33 +73,27 @@ export default function SignUpPage() {
               id="password"
               type="password"
               required
-              minLength={8} // This is also a form of validation
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
-
-          {error && (
-            <p className="text-xs text-center text-red-500">{error}</p>
-          )}
-
+          {error && <p className="text-xs text-center text-red-500">{error}</p>}
           <div>
             <button
               type="submit"
               disabled={loading}
               className="w-full px-4 py-3 font-bold text-white transition-all bg-teal-600 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </div>
         </form>
-
         <p className="mt-6 text-sm text-center text-neutral-400">
-          Already have an account?{' '}
-          <Link href="/login" legacyBehavior>
+          No account yet?{' '}
+          <Link href="/signup" legacyBehavior>
             <a className="font-medium text-teal-500 hover:text-teal-400">
-              Log In
+              Sign Up
             </a>
           </Link>
         </p>

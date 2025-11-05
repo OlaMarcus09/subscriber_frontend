@@ -12,40 +12,10 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  
-  // --- Client-side validation function ---
-  const validateForm = () => {
-    setError('');
-    
-    // Check for spaces in username
-    if (/\s/.test(username)) {
-      setError('Username cannot contain spaces. Please try again.');
-      return false;
-    }
-    
-    // Simple email check
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
-      return false;
-    }
-    
-    // Password length check
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return false;
-    }
-    
-    return true; // All good
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // --- Run our new validation first ---
-    if (!validateForm()) {
-      return; // Stop if validation fails
-    }
-    
+    setError('');
     setLoading(true);
 
     try {
@@ -68,25 +38,13 @@ export default function SignUpPage() {
       localStorage.setItem('refreshToken', refresh);
 
       // Step 3: Send to the "Select Plan" page
-      Router.push('/plans');
+      Router.push('/plans'); // We will build this next
 
     } catch (err) {
-      console.error(err);
-      if (err.response) {
-        const data = err.response.data;
-        if (data.email) {
-          setError(`Email: ${data.email[0]}`);
-        } else if (data.username) {
-          setError(`Username: ${data.username[0]}`);
-        } else if (data.password) {
-          setError(`Password: ${data.password[0]}`);
-        } else if (data.detail) {
-          setError(data.detail);
-        } else {
-          setError('An unknown error occurred. Please try again.');
-        }
+      if (err.response?.data?.email) {
+        setError('This email is already taken.');
       } else {
-        setError('Could not connect to the server. Please try again in 30 seconds.');
+        setError('An error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -116,7 +74,6 @@ export default function SignUpPage() {
               type="text"
               required
               value={username}
-              // --- THIS IS THE FIX ---
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
@@ -142,7 +99,7 @@ export default function SignUpPage() {
               id="password"
               type="password"
               required
-              minLength={8} // This is also a form of validation
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
