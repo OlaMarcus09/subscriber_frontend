@@ -4,11 +4,10 @@ import Head from 'next/head';
 import Router from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { usePaystackPayment } from 'react-paystack'; // <-- Import Paystack
-import { useToast } from "@/components/ui/use-toast"; // <-- We'll add this for notifications
-import { Toaster } from "@/components/ui/toaster"; // <-- We'll add this
+import { usePaystackPayment } from 'react-paystack';
+import { useToast } from "@/components/ui/use-toast";
+// We don't need Toaster here, it's in _app.js
 
-// --- Our Live Plan Codes ---
 const PLAN_CODES = {
   'Flex Basic': 'PLN_mu2w42h302kwhs4',
   'Flex Pro': 'PLN_rlctlj6pkky8t94',
@@ -49,7 +48,7 @@ const PlanCard = ({ plan, onSelect, isSelected }) => (
 );
 
 export default function PlansPage() {
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState([]); // This will be empty on build
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
@@ -58,26 +57,22 @@ export default function PlansPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const PAYSTACK_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
-  // --- Paystack Config ---
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: userEmail,
-    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0, // Paystack wants kobo
-    publicKey: PAYSTACK_KEY,
-    plan: selectedPlan ? PLAN_CODES[selectedPlan.name] : '',
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig);
-
-  // --- Fetch Plans and User Email ---
+  // --- We moved the data fetching HERE (inside useEffect) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) { Router.push('/login'); return; }
 
+        // Wake up the server just in case
+        await axios.get(`${API_URL}/api/plans/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
         const [plansRes, userRes] = await Promise.all([
-          axios.get(`${API_URL}/api/plans/`),
+          axios.get(`${API_URL}/api/plans/`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
           axios.get(`${API_URL}/api/users/me/`, {
             headers: { Authorization: `Bearer ${token}` }
           })
@@ -85,27 +80,37 @@ export default function PlansPage() {
         
         setPlans(plansRes.data);
         setUserEmail(userRes.data.email);
-
       } catch (error) {
         console.error("Failed to fetch data", error);
+        toast({
+          title: "Error",
+          description: "Could not load plans. Please refresh the page.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [API_URL]);
+  }, [API_URL, toast]); // Added toast to dependency array
 
-  // --- Handle Payment Success ---
+  // --- Paystack Config ---
+  const paystackConfig = {
+    reference: (new Date()).getTime().toString(),
+    email: userEmail,
+    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0,
+    publicKey: PAYSTACK_KEY,
+    plan: selectedPlan ? PLAN_CODES[selectedPlan.name] : '',
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
+
   const onPaymentSuccess = (reference) => {
-    console.log("Payment successful!", reference);
-    // NOW, we tell our backend to create the subscription
-    
     const token = localStorage.getItem('accessToken');
     axios.post(`${API_URL}/api/subscriptions/create/`, 
       { 
         plan_id: selectedPlan.id,
         paystack_reference: reference.reference 
-        // We'll build this backend endpoint next
       },
       { headers: { Authorization: `Bearer ${token}` } }
     )
@@ -114,7 +119,6 @@ export default function PlansPage() {
         title: "Subscription Activated!",
         description: "Welcome to Workspace Africa.",
       });
-      // Send them to the app
       Router.push('/app');
     })
     .catch(err => {
@@ -141,7 +145,6 @@ export default function PlansPage() {
       <Head>
         <title>Select a Plan | Workspace Africa</title>
       </Head>
-      <Toaster /> {/* Add Toaster for notifications */}
 
       <header className="py-5 border-b">
         <div className="container flex items-center justify-between px-6 mx-auto max-w-5xl">
@@ -198,3 +201,6 @@ const CheckIcon = (props) => (
     <path d="M20 6 9 17l-5-5" />
   </svg>
 );
+
+// --- WE HAVE REMOVED getStaticProps ---
+// export async function getStaticProps() { ... }
