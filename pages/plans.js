@@ -4,16 +4,7 @@ import Head from 'next/head';
 import Router from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-// --- THIS IS THE CORRECT IMPORT ---
-import { usePaystackPayment } from 'react-paystack';
 import { useToast } from "@/components/ui/use-toast";
-// We don't need Toaster here, it's in _app.js
-
-const PLAN_CODES = {
-  'Flex Basic': 'PLN_mu2w42h302kwhs4',
-  'Flex Pro': 'PLN_rlctlj6pkky8t94',
-  'Flex Unlimited': 'PLN_bn2p2x82io1fooy',
-};
 
 const PlanCard = ({ plan, onSelect, isSelected }) => (
   <Card 
@@ -52,11 +43,10 @@ export default function PlansPage() {
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { toast } = useToast();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  const PAYSTACK_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,13 +54,10 @@ export default function PlansPage() {
         const token = localStorage.getItem('accessToken');
         if (!token) { Router.push('/login'); return; }
 
-        const [plansRes, userRes] = await Promise.all([
-          axios.get(`${API_URL}/api/plans/`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API_URL}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        
+        const plansRes = await axios.get(`${API_URL}/api/plans/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setPlans(plansRes.data);
-        setUserEmail(userRes.data.email);
       } catch (error) {
         console.error("Failed to fetch data", error);
         toast({
@@ -85,51 +72,37 @@ export default function PlansPage() {
     fetchData();
   }, [API_URL, toast]);
 
-  // --- This is the correct config for 'react-paystack' ---
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: userEmail,
-    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0,
-    publicKey: PAYSTACK_KEY,
-    plan: selectedPlan ? PLAN_CODES[selectedPlan.name] : '',
-  };
+  const handleContinue = async () => {
+    if (!selectedPlan) return;
+    setIsRedirecting(true);
 
-  const initializePayment = usePaystackPayment(paystackConfig);
-
-  const onPaymentSuccess = (reference) => {
-    const token = localStorage.getItem('accessToken');
-    axios.post(`${API_URL}/api/subscriptions/create/`, 
-      { 
-        plan_id: selectedPlan.id,
-        paystack_reference: reference.reference 
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-    .then(() => {
-      toast({
-        title: "Subscription Activated!",
-        description: "Welcome to Workspace Africa.",
-      });
-      Router.push('/app');
-    })
-    .catch(err => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      // 1. Call our *backend* to get a payment link
+      const response = await axios.post(`${API_URL}/api/payments/initialize/`, 
+        { plan_id: selectedPlan.id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const { authorization_url } = response.data;
+      
+      // 2. Redirect the user to Paystack's page
+      if (authorization_url) {
+        window.location.href = authorization_url;
+      } else {
+        throw new Error("No authorization URL received.");
+      }
+      
+    } catch (err) {
       console.error(err);
       toast({
-        title: "Error activating plan",
-        description: "Your payment was successful but we couldn't activate your plan. Please contact support.",
+        title: "Error starting payment",
+        description: "Could not connect to payment gateway. Please try again.",
         variant: "destructive",
       });
-    });
-  };
-
-  const onPaymentClose = () => {
-    console.log("Payment popup closed");
-  };
-
-  const handleContinue = () => {
-    if (!selectedPlan) return;
-    // --- This is the correct call for 'react-paystack' ---
-    initializePayment(onPaymentSuccess, onPaymentClose);
+      setIsRedirecting(false);
+    }
   };
 
   return (
@@ -174,12 +147,12 @@ export default function PlansPage() {
         <div className="mt-10 text-center">
           <Button
             onClick={handleContinue}
-            disabled={!selectedPlan || !userEmail}
+            disabled={!selectedPlan || isRedirecting}
             className="w-full max-w-md h-12 text-lg"
           >
-            {selectedPlan 
-              ? `Continue with ${selectedPlan.name}` 
-              : 'Select a Plan to Continue'}
+            {isRedirecting ? 'Redirecting to Paystack...' : 
+              (selectedPlan ? `Continue with ${selectedPlan.name}` : 'Select a Plan to Continue')
+            }
           </Button>
         </div>
       </main>
