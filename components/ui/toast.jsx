@@ -2,13 +2,7 @@ import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva } from "class-variance-authority"
 import { X } from "lucide-react"
-
-// We need to manually add the 'cn' helper function
-import { clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
-export function cn(...inputs) {
-  return twMerge(clsx(inputs))
-}
+import { cn } from "@/lib/utils"
 
 const ToastProvider = ToastPrimitives.Provider
 

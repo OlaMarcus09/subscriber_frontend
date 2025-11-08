@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* This is our new "Framer-style" theme with shadcn/ui */
+/* This is our "Framer-style" theme with shadcn/ui */
 @layer base {
   :root {
     --background: 0 0% 100%;
