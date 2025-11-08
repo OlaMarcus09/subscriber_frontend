@@ -4,9 +4,9 @@ import Head from 'next/head';
 import Router from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { usePaystackPayment } from 'react-paystack';
+// --- THIS IS THE NEW IMPORT ---
+import { usePaystack } from '@paystack/inline-js';
 import { useToast } from "@/components/ui/use-toast";
-// We don't need Toaster here, it's in _app.js
 
 const PLAN_CODES = {
   'Flex Basic': 'PLN_mu2w42h302kwhs4',
@@ -48,7 +48,7 @@ const PlanCard = ({ plan, onSelect, isSelected }) => (
 );
 
 export default function PlansPage() {
-  const [plans, setPlans] = useState([]); // This will be empty on build
+  const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
@@ -57,25 +57,15 @@ export default function PlansPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const PAYSTACK_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
-  // --- We moved the data fetching HERE (inside useEffect) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) { Router.push('/login'); return; }
 
-        // Wake up the server just in case
-        await axios.get(`${API_URL}/api/plans/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
         const [plansRes, userRes] = await Promise.all([
-          axios.get(`${API_URL}/api/plans/`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${API_URL}/api/users/me/`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          axios.get(`${API_URL}/api/plans/`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         setPlans(plansRes.data);
@@ -92,18 +82,18 @@ export default function PlansPage() {
       }
     };
     fetchData();
-  }, [API_URL, toast]); // Added toast to dependency array
+  }, [API_URL, toast]);
 
-  // --- Paystack Config ---
+  // --- THIS IS THE NEW PAYSTACK CONFIG ---
   const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: userEmail,
-    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0,
     publicKey: PAYSTACK_KEY,
+    email: userEmail,
+    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0, // Paystack wants kobo
     plan: selectedPlan ? PLAN_CODES[selectedPlan.name] : '',
+    reference: (new Date()).getTime().toString(),
   };
 
-  const initializePayment = usePaystackPayment(paystackConfig);
+  const initializePayment = usePaystack(paystackConfig);
 
   const onPaymentSuccess = (reference) => {
     const token = localStorage.getItem('accessToken');
@@ -137,7 +127,11 @@ export default function PlansPage() {
 
   const handleContinue = () => {
     if (!selectedPlan) return;
-    initializePayment(onPaymentSuccess, onPaymentClose);
+    // --- THIS IS THE NEW PAYSTACK CALL ---
+    initializePayment({
+      onSuccess: onPaymentSuccess,
+      onClose: onPaymentClose,
+    });
   };
 
   return (
@@ -195,12 +189,8 @@ export default function PlansPage() {
   );
 }
 
-// Helper Icon
 const CheckIcon = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 6 9 17l-5-5" />
   </svg>
 );
-
-// --- WE HAVE REMOVED getStaticProps ---
-// export async function getStaticProps() { ... }
