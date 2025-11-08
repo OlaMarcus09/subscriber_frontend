@@ -4,9 +4,10 @@ import Head from 'next/head';
 import Router from 'next/router';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-// --- THIS IS THE NEW IMPORT ---
-import { usePaystack } from '@paystack/inline-js';
+// --- THIS IS THE CORRECT IMPORT ---
+import { usePaystackPayment } from 'react-paystack';
 import { useToast } from "@/components/ui/use-toast";
+// We don't need Toaster here, it's in _app.js
 
 const PLAN_CODES = {
   'Flex Basic': 'PLN_mu2w42h302kwhs4',
@@ -84,16 +85,16 @@ export default function PlansPage() {
     fetchData();
   }, [API_URL, toast]);
 
-  // --- THIS IS THE NEW PAYSTACK CONFIG ---
+  // --- This is the correct config for 'react-paystack' ---
   const paystackConfig = {
-    publicKey: PAYSTACK_KEY,
-    email: userEmail,
-    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0, // Paystack wants kobo
-    plan: selectedPlan ? PLAN_CODES[selectedPlan.name] : '',
     reference: (new Date()).getTime().toString(),
+    email: userEmail,
+    amount: selectedPlan ? Math.round(selectedPlan.price_ngn * 100) : 0,
+    publicKey: PAYSTACK_KEY,
+    plan: selectedPlan ? PLAN_CODES[selectedPlan.name] : '',
   };
 
-  const initializePayment = usePaystack(paystackConfig);
+  const initializePayment = usePaystackPayment(paystackConfig);
 
   const onPaymentSuccess = (reference) => {
     const token = localStorage.getItem('accessToken');
@@ -127,11 +128,8 @@ export default function PlansPage() {
 
   const handleContinue = () => {
     if (!selectedPlan) return;
-    // --- THIS IS THE NEW PAYSTACK CALL ---
-    initializePayment({
-      onSuccess: onPaymentSuccess,
-      onClose: onPaymentClose,
-    });
+    // --- This is the correct call for 'react-paystack' ---
+    initializePayment(onPaymentSuccess, onPaymentClose);
   };
 
   return (
