@@ -33,7 +33,7 @@ export default function ProfilePage() {
       }
     };
     fetchUser();
-  }, []);
+  }, [API_URL]);
   
   const handleLogout = () => {
     localStorage.clear();
@@ -48,41 +48,53 @@ export default function ProfilePage() {
       
       <Card>
         <CardHeader>
-          <div className="flex items-center space-x-4">
-            <Avatar className="w-16 h-16">
-              <AvatarImage src={user?.photo_url} alt={user?.username} />
-              <AvatarFallback className="text-xl">
-                {user?.username ? user.username.charAt(0).toUpperCase() : '?'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-2xl">{user?.username || '...'}</CardTitle>
-              <CardDescription>{user?.email || '...'}</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mt-6 pt-6 border-t">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Plan</h3>
-            <p className="mt-2 text-xl font-bold text-primary">
-              {user?.subscription?.plan?.name || 'No Active Plan'}
-            </p>
-            
-            {user?.subscription && (
-              <div className="mt-4">
-                <p className="text-lg font-bold text-foreground">
-                  {user.days_used} / {user.total_days > 900 ? 'Unlimited' : user.total_days}
-                </p>
-                <p className="text-sm text-muted-foreground">Days Used This Month</p>
+          {loading ? (
+            <p>Loading profile...</p>
+          ) : user ? (
+            <div className="flex items-center space-x-4">
+              <Avatar className="w-16 h-16">
+                <AvatarImage 
+                  src={user.photo_url || `https://ui-avatars.com/api/?name=${user.username}&background=0d9488&color=fff`} 
+                  alt={user.username} 
+                />
+                <AvatarFallback className="text-xl">
+                  {user.username ? user.username.charAt(0).toUpperCase() : '?'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-2xl">{user.username}</CardTitle>
+                <CardDescription>{user.email}</CardDescription>
               </div>
-            )}
-          </div>
-        </CardContent>
+            </div>
+          ) : (
+            <p>Could not load user profile.</p>
+          )}
+        </CardHeader>
+        
+        {user && (
+          <CardContent>
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Plan</h3>
+              <p className="mt-2 text-xl font-bold text-primary">
+                {user.subscription?.plan?.name || 'No Active Plan'}
+              </p>
+              
+              {user.subscription && (
+                <div className="mt-4">
+                  <p className="text-lg font-bold text-foreground">
+                    {user.days_used} / {user.total_days > 900 ? 'Unlimited' : user.total_days}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Days Used This Month</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        )}
       </Card>
       
       <Button
         onClick={handleLogout}
-        variant="destructive" // This uses our orange/red theme
+        variant="destructive"
         className="w-full mt-8"
       >
         Log Out
