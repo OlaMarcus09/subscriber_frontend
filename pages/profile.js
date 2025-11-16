@@ -15,10 +15,10 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('overview');
 
   const profileStats = {
-    checkinsThisMonth: 12,
-    favoriteSpace: 'Tech Hub Ibadan',
-    memberSince: 'Jan 2024',
-    planUsage: '8/15 days'
+    checkinsThisMonth: 0,
+    favoriteSpace: 'None',
+    memberSince: 'Just now',
+    planUsage: '0/18 days'
   };
 
   const subscriptionData = {
@@ -26,7 +26,10 @@ export default function ProfilePage() {
     billingCycle: 'Monthly',
     price: '₦15,000',
     nextBilling: 'Dec 5, 2024',
-    status: 'active'
+    status: 'active',
+    totalDays: 18,
+    daysUsed: 0,
+    daysRemaining: 18
   };
 
   useEffect(() => {
@@ -165,13 +168,13 @@ export default function ProfilePage() {
               <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
                 <div 
                   className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: '53%' }}
+                  style={{ width: '0%' }}
                 ></div>
               </div>
               
               <div className="flex justify-between text-xs text-gray-400">
-                <span>8 days used</span>
-                <span>7 days remaining</span>
+                <span>0 days used</span>
+                <span>18 days remaining</span>
               </div>
             </CardContent>
           </Card>
@@ -220,6 +223,10 @@ export default function ProfilePage() {
                   <span>Plan Access</span>
                   <span>Standard + Premium</span>
                 </div>
+                <div className="flex justify-between text-gray-300">
+                  <span>Days Available</span>
+                  <span>{subscriptionData.totalDays} days/month</span>
+                </div>
               </div>
               
               <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white">
@@ -236,7 +243,7 @@ export default function ProfilePage() {
             <CardContent>
               <div className="space-y-3">
                 {[
-                  '15 days per month',
+                  '18 days per month',
                   'Access to all standard spaces',
                   'Premium space access',
                   'High-speed WiFi',

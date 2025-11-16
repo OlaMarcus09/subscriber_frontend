@@ -6,49 +6,49 @@ import AppLayout from '../components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, TrendingUp, Users, MapPin, Clock, Star, Zap, Sparkles, ArrowUp, ArrowDown } from 'lucide-react';
+import { Calendar, TrendingUp, Users, MapPin, Clock, Star, Zap, Sparkles, ArrowUp, ArrowDown, BarChart3 } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('month');
 
-  const analyticsData = {
+  // Default zero analytics data
+  const zeroAnalytics = {
     overview: {
-      totalCheckins: 47,
-      monthlyCheckins: 12,
-      favoriteSpace: 'Tech Hub Ibadan',
-      daysUsed: 8,
-      daysRemaining: 7
+      total_checkins: 0,
+      monthly_checkins: 0,
+      days_used: 0,
+      favorite_space: 'None',
+      member_since: 'Just now'
     },
-    monthlyStats: {
-      current: 12,
-      previous: 8,
-      change: 50,
-      trend: 'up'
+    subscription: {
+      plan_name: 'Flex Pro',
+      total_days: 18,
+      days_used: 0,
+      days_remaining: 18,
+      access_tier: 'PREMIUM'
     },
-    spacesVisited: [
-      { name: 'Tech Hub Ibadan', visits: 8, tier: 'PREMIUM' },
-      { name: 'Creative Space UI', visits: 3, tier: 'STANDARD' },
-      { name: 'Lekki Workspace', visits: 1, tier: 'PREMIUM' }
-    ],
-    weeklyPattern: [
-      { day: 'Mon', checkins: 3 },
-      { day: 'Tue', checkins: 2 },
-      { day: 'Wed', checkins: 4 },
-      { day: 'Thu', checkins: 1 },
-      { day: 'Fri', checkins: 2 },
+    monthly_stats: {
+      current: 0,
+      previous: 0,
+      change: 0,
+      trend: 'neutral'
+    },
+    spaces_visited: [],
+    weekly_pattern: [
+      { day: 'Mon', checkins: 0 },
+      { day: 'Tue', checkins: 0 },
+      { day: 'Wed', checkins: 0 },
+      { day: 'Thu', checkins: 0 },
+      { day: 'Fri', checkins: 0 },
       { day: 'Sat', checkins: 0 },
       { day: 'Sun', checkins: 0 }
     ],
-    peakHours: [
-      { hour: '8-9 AM', percentage: 15 },
-      { hour: '9-10 AM', percentage: 25 },
-      { hour: '10-11 AM', percentage: 20 },
-      { hour: '2-3 PM', percentage: 18 },
-      { hour: '4-5 PM', percentage: 12 }
-    ]
+    peak_hours: []
   };
+
+  const [analytics, setAnalytics] = useState(zeroAnalytics);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -61,6 +61,14 @@ export default function AnalyticsPage() {
         });
         
         setUser(userRes.data);
+        // For now, we use zero data since no check-ins exist
+        setAnalytics({
+          ...zeroAnalytics,
+          overview: {
+            ...zeroAnalytics.overview,
+            member_since: new Date(userRes.data.date_created).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) || 'Just now'
+          }
+        });
       } catch (err) {
         if (err.response && err.response.status === 401) {
           localStorage.clear();
@@ -80,7 +88,7 @@ export default function AnalyticsPage() {
           <div className={`w-10 h-10 bg-${color}-500/20 rounded-lg flex items-center justify-center text-${color}-400`}>
             {icon}
           </div>
-          {change && (
+          {change !== undefined && change > 0 && (
             <Badge className={`${trend === 'up' ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'} text-xs`}>
               {trend === 'up' ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
               {change}%
@@ -107,6 +115,22 @@ export default function AnalyticsPage() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <AppLayout activePage="analytics">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="text-gray-400 mt-4">Loading analytics...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const usagePercentage = analytics.subscription ? 
+    (analytics.overview.days_used / analytics.subscription.total_days) * 100 : 0;
 
   return (
     <AppLayout activePage="analytics">
@@ -147,19 +171,40 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* --- Empty State --- */}
+      {analytics.overview.total_checkins === 0 && (
+        <Card className="border-0 bg-gradient-to-br from-gray-900 to-black border border-purple-500/30 mb-6">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-purple-500/20 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-8 h-8 text-purple-400" />
+            </div>
+            <h3 className="font-bold text-white text-lg mb-2">No Data Yet</h3>
+            <p className="text-gray-400 text-sm mb-6 max-w-sm mx-auto">
+              Start checking into workspaces to see your analytics and usage patterns here.
+            </p>
+            <Button 
+              onClick={() => Router.push('/spaces')}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              Find a Space to Check In
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* --- Overview Stats --- */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <StatCard
           title="Monthly Check-ins"
-          value={analyticsData.monthlyStats.current}
-          change={analyticsData.monthlyStats.change}
-          trend={analyticsData.monthlyStats.trend}
+          value={analytics.overview.monthly_checkins}
+          change={analytics.monthly_stats?.change}
+          trend={analytics.monthly_stats?.trend}
           icon={<TrendingUp className="w-5 h-5" />}
           color="purple"
         />
         <StatCard
           title="Total Check-ins"
-          value={analyticsData.overview.totalCheckins}
+          value={analytics.overview.total_checkins}
           icon={<Users className="w-5 h-5" />}
           color="blue"
         />
@@ -173,50 +218,17 @@ export default function AnalyticsPage() {
             Monthly Usage
           </CardTitle>
           <CardDescription className="text-gray-400">
-            {analyticsData.overview.daysUsed} of 15 days used this month
+            {analytics.overview.days_used} of {analytics.subscription?.total_days || 18} days used this month
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <ProgressBar
-              percentage={(analyticsData.overview.daysUsed / 15) * 100}
+              percentage={usagePercentage}
               color="purple"
               label="Days Used"
-              value={`${analyticsData.overview.daysUsed}/15 days`}
+              value={`${analytics.overview.days_used}/${analytics.subscription?.total_days || 18} days`}
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* --- Top Spaces --- */}
-      <Card className="border-0 bg-gradient-to-br from-gray-900 to-black border border-gray-800 mb-6">
-        <CardHeader>
-          <CardTitle className="text-white text-lg flex items-center">
-            <MapPin className="w-5 h-5 mr-2 text-blue-400" />
-            Top Spaces Visited
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {analyticsData.spacesVisited.map((space, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">{index + 1}</span>
-                  </div>
-                  <div>
-                    <h4 className="text-white text-sm font-medium">{space.name}</h4>
-                    <Badge className={`${space.tier === 'PREMIUM' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30'} text-xs mt-1`}>
-                      {space.tier === 'PREMIUM' ? '⭐ Premium' : '✨ Standard'}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-white font-bold">{space.visits}</div>
-                  <div className="text-gray-400 text-xs">visits</div>
-                </div>
-              </div>
-            ))}
           </div>
         </CardContent>
       </Card>
@@ -231,47 +243,51 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex justify-between items-end h-32 mb-4">
-            {analyticsData.weeklyPattern.map((day, index) => (
+            {analytics.weekly_pattern.map((day, index) => (
               <div key={index} className="flex flex-col items-center flex-1">
                 <div 
-                  className="w-6 bg-gradient-to-t from-purple-500 to-blue-500 rounded-t transition-all duration-500 hover:opacity-80"
-                  style={{ height: `${(day.checkins / 4) * 80}px` }}
+                  className="w-6 bg-gradient-to-t from-purple-500/50 to-blue-500/50 rounded-t transition-all duration-500"
+                  style={{ height: `${Math.max(day.checkins * 20, 8)}px` }} // Minimum height for visibility
                 ></div>
                 <span className="text-gray-400 text-xs mt-2">{day.day}</span>
                 <span className="text-white text-xs font-bold mt-1">{day.checkins}</span>
               </div>
             ))}
           </div>
+          <p className="text-gray-500 text-xs text-center">
+            Check in during the week to see your pattern
+          </p>
         </CardContent>
       </Card>
 
-      {/* --- Peak Hours --- */}
+      {/* --- Member Info --- */}
       <Card className="border-0 bg-gradient-to-br from-gray-900 to-black border border-gray-800">
         <CardHeader>
           <CardTitle className="text-white text-lg flex items-center">
-            <Clock className="w-5 h-5 mr-2 text-orange-400" />
-            Peak Hours
+            <Sparkles className="w-5 h-5 mr-2 text-purple-400" />
+            Your Membership
           </CardTitle>
-          <CardDescription className="text-gray-400">
-            Your most frequent check-in times
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {analyticsData.peakHours.map((hour, index) => (
-              <div key={index}>
-                <div className="flex justify-between text-sm text-gray-300 mb-1">
-                  <span>{hour.hour}</span>
-                  <span>{hour.percentage}%</span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${hour.percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Plan</span>
+              <span className="text-white font-medium">Flex Pro</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Access Tier</span>
+              <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 text-xs">
+                ⭐ Premium
+              </Badge>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Member Since</span>
+              <span className="text-white">{analytics.overview.member_since}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Favorite Space</span>
+              <span className="text-white">{analytics.overview.favorite_space}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
