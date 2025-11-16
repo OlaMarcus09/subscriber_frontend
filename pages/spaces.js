@@ -17,88 +17,24 @@ export default function SpacesPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Static spaces data for demo
-  const demoSpaces = [
-    {
-      id: 1,
-      name: "Tech Hub Ibadan",
-      address: "Bodija, Ibadan",
-      access_tier: "PREMIUM",
-      distance: "1.2 km away",
-      amenities: ["wifi", "coffee", "printing", "ac", "parking"],
-      rating: 4.8,
-      isOpen: true
-    },
-    {
-      id: 2,
-      name: "Creative Space UI",
-      address: "University Area, Ibadan",
-      access_tier: "STANDARD", 
-      distance: "0.8 km away",
-      amenities: ["wifi", "meeting-rooms", "events"],
-      rating: 4.3,
-      isOpen: true
-    },
-    {
-      id: 3,
-      name: "Lekki Workspace",
-      address: "Lekki Phase 1, Lagos",
-      access_tier: "PREMIUM",
-      distance: "12.5 km away",
-      amenities: ["wifi", "coffee", "parking", "lounge"],
-      rating: 4.9,
-      isOpen: false
-    },
-    {
-      id: 4,
-      name: "Abuja Business Center",
-      address: "Garki, Abuja", 
-      access_tier: "PREMIUM",
-      distance: "15.2 km away",
-      amenities: ["wifi", "coffee", "ac", "printing"],
-      rating: 4.7,
-      isOpen: true
-    },
-    {
-      id: 5,
-      name: "Yaba Innovation Hub",
-      address: "Yaba, Lagos",
-      access_tier: "STANDARD",
-      distance: "10.1 km away", 
-      amenities: ["wifi", "events", "community"],
-      rating: 4.2,
-      isOpen: true
-    },
-    {
-      id: 6,
-      name: "Ikeja Corporate",
-      address: "Ikeja, Lagos",
-      access_tier: "PREMIUM",
-      distance: "11.8 km away",
-      amenities: ["wifi", "coffee", "printing", "ac"],
-      rating: 4.6,
-      isOpen: true
-    }
-  ];
-
   useEffect(() => {
     const fetchSpaces = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) { Router.push('/login'); return; }
         
-        // For demo, using static data. Replace with API call:
-        // const response = await axios.get(`${API_URL}/api/spaces/`, {
-        //   headers: { Authorization: `Bearer ${token}` }
-        // });
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/spaces/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         
-        setSpaces(demoSpaces);
-        setFilteredSpaces(demoSpaces);
+        setSpaces(response.data);
+        setFilteredSpaces(response.data);
       } catch (err) {
         console.error('Error fetching spaces:', err);
-        // Fallback to demo data
-        setSpaces(demoSpaces);
-        setFilteredSpaces(demoSpaces);
+        if (err.response && err.response.status === 401) {
+          localStorage.clear();
+          Router.push('/login');
+        }
       } finally {
         setLoading(false);
       }
@@ -126,27 +62,15 @@ export default function SpacesPage() {
   }, [searchTerm, activeFilter, spaces]);
 
   const SpaceCard = ({ space }) => (
-    <Card className="overflow-hidden border-0 bg-gradient-to-br from-gray-900 to-black border border-gray-800 hover:border-purple-500/30 transition-all duration-300 group">
+    <Card className="overflow-hidden border-0 bg-gradient-to-br from-gray-900 to-black border border-gray-800 hover:border-purple-500/30 transition-all duration-300 group active:scale-95">
       <div className="aspect-video bg-gradient-to-br from-purple-900/20 to-blue-900/20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex items-end p-4">
           <div className="flex items-center justify-between w-full">
             <Badge className={`${space.access_tier === 'PREMIUM' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30'} border backdrop-blur-sm`}>
               {space.access_tier === 'PREMIUM' ? '⭐ Premium' : '✨ Standard'}
             </Badge>
-            <div className="flex items-center space-x-1 bg-black/50 rounded-full px-2 py-1">
-              <Star className="w-3 h-3 text-yellow-400 fill-current" />
-              <span className="text-white text-xs">{space.rating}</span>
-            </div>
           </div>
         </div>
-        
-        {!space.isOpen && (
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs">
-              Closed
-            </Badge>
-          </div>
-        )}
       </div>
       
       <CardContent className="p-4">
@@ -156,7 +80,7 @@ export default function SpacesPage() {
         
         <div className="flex items-center text-sm text-gray-400 mb-3">
           <MapPin className="w-4 h-4 mr-1 text-purple-400" />
-          <span>{space.address}</span>
+          <span className="line-clamp-2">{space.address}</span>
         </div>
         
         <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
@@ -164,20 +88,24 @@ export default function SpacesPage() {
             <Wifi className="w-4 h-4 mr-1 text-green-400" />
             <span>WiFi</span>
           </div>
-          <div className="flex items-center">
-            <Coffee className="w-4 h-4 mr-1 text-orange-400" />
-            <span>Coffee</span>
-          </div>
-          <div className="flex items-center">
-            <Users className="w-4 h-4 mr-1 text-blue-400" />
-            <span>Community</span>
-          </div>
+          {space.amenities?.includes('AC') && (
+            <div className="flex items-center">
+              <Zap className="w-4 h-4 mr-1 text-blue-400" />
+              <span>AC</span>
+            </div>
+          )}
+          {space.amenities?.includes('Kitchen') && (
+            <div className="flex items-center">
+              <Coffee className="w-4 h-4 mr-1 text-orange-400" />
+              <span>Kitchen</span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-400">
             <Clock className="w-4 h-4 inline mr-1" />
-            {space.isOpen ? 'Open Now' : 'Closed'}
+            Open Now
           </div>
           <Button size="sm" variant="outline" className="border-purple-500 text-purple-300 hover:bg-purple-500/10">
             View Details
@@ -296,7 +224,7 @@ export default function SpacesPage() {
       {/* --- Spaces Grid --- */}
       {loading ? (
         <div className="grid grid-cols-1 gap-4">
-          {[1, 2, 3, 4].map(i => (
+          {[1, 2, 3, 4, 5, 6, 7].map(i => (
             <Card key={i} className="animate-pulse border-0 bg-gray-900">
               <div className="aspect-video bg-gray-800 rounded-lg"></div>
               <CardContent className="p-4 space-y-3">
