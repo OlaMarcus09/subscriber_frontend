@@ -1,91 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Router from 'next/router';
-import Head from 'next/head';
-import Link from 'next/link';
-import AppLayout from '../components/AppLayout';
-import { Button } from '@/components/ui/button'; // Using shadcn Button
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'; // Using shadcn Card
+// ... (previous imports remain the same)
+import { BarChart3 } from 'lucide-react';
 
-export default function AppHome() {
-  const [spaces, setSpaces] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+// ... (inside the component, update the QuickAction section)
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) { Router.push('/login'); return; }
-        
-        const [userRes, spacesRes] = await Promise.all([
-          axios.get(`${API_URL}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API_URL}/api/spaces/`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        
-        setUser(userRes.data);
-        setSpaces(spacesRes.data);
-      } catch (err) {
-        if (err.response && err.response.status === 401) {
-          localStorage.clear();
-          Router.push('/login');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  return (
-    <AppLayout activePage="home">
-      <Head>
-        <title>Home | Workspace Africa</title>
-      </Head>
-
-      <h1 className="text-3xl font-bold text-foreground">
-        Good Morning, {user?.username || '...'}
-      </h1>
-      
-      {/* --- Check-In Button (shadcn) --- */}
-      <div className="mt-6">
-        <Button asChild className="w-full text-lg h-12" size="lg">
-          <Link href="/checkin">Show My Check-In Key</Link>
-        </Button>
-      </div>
-
-      {/* --- Map Placeholder (light) --- */}
-      <Card className="w-full h-48 mt-8">
-        <CardContent className="flex items-center justify-center h-full">
-          <p className="text-muted-foreground">(Map View Placeholder)</p>
-        </CardContent>
-      </Card>
-
-      {/* --- Nearby Spaces List (shadcn) --- */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-foreground">Nearby Spaces</h2>
-        <div className="mt-4 space-y-4">
-          {loading ? (
-            <p className="text-muted-foreground">Loading spaces...</p>
-          ) : (
-            spaces.map(space => (
-              <Card key={space.id}>
-                <CardHeader>
-                  <CardTitle>{space.name}</CardTitle>
-                  <CardDescription>{space.address}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm font-medium text-primary">
-                    {space.access_tier === 'PREMIUM' ? 'Premium Tier' : 'Standard Tier'}
-                  </p>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </div>
-    </AppLayout>
-  );
-}
+{/* --- Quick Actions --- */}
+<div className="mb-6">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-lg font-bold text-white">Quick Actions</h2>
+    <Sparkles className="w-4 h-4 text-purple-400" />
+  </div>
+  
+  <div className="grid grid-cols-1 gap-3">
+    <QuickAction
+      icon={<QrCode className="w-5 h-5" />}
+      title="Show Check-In Key"
+      description="Generate your digital access code"
+      action="/checkin"
+      color="purple"
+    />
+    <QuickAction
+      icon={<Building2 className="w-5 h-5" />}
+      title="Browse Spaces"
+      description="Find workspaces near you"
+      action="/spaces"
+      color="blue"
+    />
+    <QuickAction
+      icon={<BarChart3 className="w-5 h-5" />}
+      title="View Analytics"
+      description="Track your usage patterns"
+      action="/analytics"
+      color="green"
+    />
+    <QuickAction
+      icon={<Calendar className="w-5 h-5" />}
+      title="My Plan & Usage"
+      description="View subscription details"
+      action="/profile"
+      color="yellow"
+    />
+  </div>
+</div>
