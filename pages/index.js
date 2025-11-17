@@ -7,62 +7,69 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { MapPin, Wifi, Coffee, Users, Clock, Zap, Star, ChevronRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { MapPin, Wifi, Coffee, Users, Clock, Zap, Sparkles, CheckCircle2, Building, Star } from 'lucide-react';
 
 export default function LandingPage() {
   const [spaces, setSpaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
 
-  // Static featured spaces for landing page (to avoid 401 error)
-  const featuredSpaces = [
+  // Your 7 partnered spaces data
+  const partneredSpaces = [
     {
       id: 1,
-      name: "Tech Hub Ibadan",
-      address: "Bodija, Ibadan",
+      name: "Seb's Hub Co-Working Space",
+      address: "No 32, Awolowo Avenue, Bodija, Ibadan",
       access_tier: "PREMIUM",
-      amenities: ["wifi", "coffee", "printing"]
+      amenities: ["Wi-Fi", "AC", "Kitchen", "Meeting Rooms", "Power Backup", "Private Offices"]
     },
     {
       id: 2,
-      name: "Creative Space UI",
-      address: "University Area, Ibadan",
-      access_tier: "STANDARD",
-      amenities: ["wifi", "meeting-rooms"]
+      name: "Worknub Co-working Space",
+      address: "West One Building, Agodi GRA, Ibadan",
+      access_tier: "PREMIUM", 
+      amenities: ["Wi-Fi", "AC", "Kitchen", "Meeting Rooms", "Power Backup", "Private Offices"]
     },
     {
       id: 3,
-      name: "Lekki Workspace",
-      address: "Lekki Phase 1, Lagos",
-      access_tier: "PREMIUM",
-      amenities: ["wifi", "coffee", "parking"]
+      name: "Stargate Workstation",
+      address: "Cocoa House, Dugbe, Ibadan",
+      access_tier: "STANDARD",
+      amenities: ["Wi-Fi", "AC", "Private Offices"]
     },
     {
       id: 4,
-      name: "Abuja Business Center",
-      address: "Garki, Abuja",
+      name: "theBUNKer Services Nigeria Limited",
+      address: "Ibadan, Oyo State",
       access_tier: "PREMIUM",
-      amenities: ["wifi", "coffee", "ac"]
+      amenities: ["Wi-Fi", "AC", "Kitchen", "Meeting Rooms", "Power Backup", "Private Offices"]
     },
     {
       id: 5,
-      name: "Yaba Innovation Hub",
-      address: "Yaba, Lagos",
+      name: "Nesta Co-work Space, Akobo",
+      address: "House 10, Road 17, Bashorun Estate, Akobo, Ibadan",
       access_tier: "STANDARD",
-      amenities: ["wifi", "events"]
+      amenities: ["Wi-Fi", "Kitchen", "Meeting Rooms", "Power Backup", "Private Offices"]
     },
     {
       id: 6,
-      name: "Ikeja Corporate",
-      address: "Ikeja, Lagos",
+      name: "Cyberhaven",
+      address: "Okunmade street, opposite veterinary junction, Ibadan",
+      access_tier: "STANDARD",
+      amenities: ["Wi-Fi", "AC", "Meeting Rooms"]
+    },
+    {
+      id: 7,
+      name: "Atelier Coworking Space & French Café",
+      address: "Ibadan, Oyo State",
       access_tier: "PREMIUM",
-      amenities: ["wifi", "coffee", "printing"]
+      amenities: ["Wi-Fi", "AC", "Kitchen", "Meeting Rooms", "Power Backup", "Private Offices", "Café"]
     }
   ];
 
   useEffect(() => {
-    // Use static data to avoid 401 error on landing page
-    setSpaces(featuredSpaces);
+    // Use static partnered spaces data
+    setSpaces(partneredSpaces);
     setLoading(false);
   }, []);
 
@@ -73,9 +80,6 @@ export default function LandingPage() {
           <Badge className={`${space.access_tier === 'PREMIUM' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30'} border backdrop-blur-sm`}>
             {space.access_tier === 'PREMIUM' ? '⭐ Premium' : '✨ Standard'}
           </Badge>
-        </div>
-        <div className="absolute top-4 right-4">
-          <Sparkles className="w-4 h-4 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       </div>
       
@@ -89,7 +93,7 @@ export default function LandingPage() {
           <span className="line-clamp-1">{space.address}</span>
         </div>
         
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="flex items-center gap-4 text-xs text-gray-400">
           <div className="flex items-center">
             <Wifi className="w-3 h-3 mr-1 text-green-400" />
             <span>WiFi</span>
@@ -230,6 +234,94 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- Partnered Spaces Section --- */}
+      <section id="spaces" className="py-20 bg-gradient-to-b from-black to-gray-900">
+        <div className="container px-4 mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Our Partnered Spaces</h2>
+            <p className="text-gray-400">Discover amazing co-working spaces across Ibadan</p>
+            <div className="flex justify-center items-center space-x-4 mt-4">
+              <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                ⭐ 4 Premium Spaces
+              </Badge>
+              <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                ✨ 3 Standard Spaces
+              </Badge>
+            </div>
+          </div>
+          
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7].map(i => (
+                <Card key={i} className="animate-pulse bg-gray-900 border-0">
+                  <div className="aspect-video bg-gray-800 rounded-lg"></div>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-800 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-800 rounded w-1/2"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {spaces.map(space => (
+                <SpaceCard key={space.id} space={space} />
+              ))}
+            </div>
+          )}
+          
+          <div className="text-center mt-12">
+            <Button asChild variant="outline" size="lg" className="border-purple-500 text-purple-300 hover:bg-purple-500/10">
+              <Link href="/signup" className="flex items-center justify-center">
+                Join Now to Access All Spaces
+                <Sparkles className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Partner & Team CTAs --- */}
+      <section className="py-20 bg-gradient-to-b from-gray-900 to-black">
+        <div className="container px-4 mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            
+            {/* Partner CTA */}
+            <Card className="border-0 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-purple-500/20 rounded-full flex items-center justify-center">
+                  <Building className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">List Your Space</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  Become a partner and earn ₦1,500 per check-in at your coworking space
+                </p>
+                <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white w-full">
+                  <Link href="/partner-signup">Apply as Partner</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            
+            {/* Team CTA */}
+            <Card className="border-0 bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-green-500/20 rounded-full flex items-center justify-center">
+                  <Users className="w-8 h-8 text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Team Plans</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  Give your team flexible access to workspaces across multiple locations
+                </p>
+                <Button asChild className="bg-green-600 hover:bg-green-700 text-white w-full">
+                  <Link href="/team-signup">Start Team Plan</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            
+          </div>
+        </div>
+      </section>
+
       {/* --- Features --- */}
       <section className="py-20 bg-black">
         <div className="container px-4 mx-auto">
@@ -259,45 +351,6 @@ export default function LandingPage() {
               title="Flexible Plans"
               description="Choose from daily, monthly, or unlimited plans that fit your workflow"
             />
-          </div>
-        </div>
-      </section>
-
-      {/* --- Featured Spaces --- */}
-      <section id="spaces" className="py-20 bg-gradient-to-b from-black to-gray-900">
-        <div className="container px-4 mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Featured Spaces</h2>
-            <p className="text-gray-400">Discover amazing co-working spaces across Nigeria</p>
-          </div>
-          
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <Card key={i} className="animate-pulse bg-gray-900 border-0">
-                  <div className="aspect-video bg-gray-800 rounded-lg"></div>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="h-4 bg-gray-800 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-800 rounded w-1/2"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {spaces.map(space => (
-                <SpaceCard key={space.id} space={space} />
-              ))}
-            </div>
-          )}
-          
-          <div className="text-center mt-12">
-            <Button asChild variant="outline" size="lg" className="border-purple-500 text-purple-300 hover:bg-purple-500/10">
-              <Link href="/signup" className="flex items-center justify-center">
-                See All Spaces & Get Started
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
           </div>
         </div>
       </section>
