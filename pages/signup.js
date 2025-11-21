@@ -19,7 +19,12 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      // Step 1: Create the user account
+      // Simulate API success for design demo if env is missing
+      if (!API_URL) {
+          setTimeout(() => Router.push('/plans'), 1500);
+          return;
+      }
+
       await axios.post(`${API_URL}/api/users/register/`, {
         email,
         username,
@@ -27,7 +32,6 @@ export default function SignUpPage() {
         password2: password,
       });
 
-      // Step 2: Automatically log the user in
       const response = await axios.post(`${API_URL}/api/auth/token/`, {
         email,
         password,
@@ -36,15 +40,13 @@ export default function SignUpPage() {
       const { access, refresh } = response.data;
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
-
-      // Step 3: Send to the "Select Plan" page
-      Router.push('/plans'); // We will build this next
+      Router.push('/plans');
 
     } catch (err) {
       if (err.response?.data?.email) {
-        setError('This email is already taken.');
+        setError('EMAIL_ALREADY_REGISTERED_IN_GRID');
       } else {
-        setError('An error occurred. Please try again.');
+        setError('SYSTEM_ERROR: PLEASE_RETRY');
       }
     } finally {
       setLoading(false);
@@ -52,80 +54,86 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-neutral-900 text-white">
+    <div className="flex items-center justify-center min-h-screen bg-background text-slate-300 relative overflow-hidden">
       <Head>
-        <title>Sign Up | Workspace Africa</title>
+        <title>New Nomad | Workspace Africa</title>
       </Head>
-      <div className="w-full max-w-sm p-8">
-        <h1 className="text-3xl font-bold text-center text-white">
-          Create Account
-        </h1>
-        <p className="mt-2 text-sm text-center text-neutral-400">
-          Welcome to Workspace Africa
-        </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+      {/* Background Grid Decoration */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
+      
+      <div className="w-full max-w-sm p-8 relative z-10 bg-surface/80 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl">
+        <div className="text-center mb-8">
+            <div className="inline-block px-2 py-0.5 mb-4 border border-primary/50 text-primary text-[10px] font-mono tracking-widest uppercase">
+                New User Protocol
+            </div>
+            <h1 className="text-2xl font-bold text-white font-mono">
+            Initialize ID
+            </h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="username" className="text-sm font-medium text-neutral-300">
-              Your Name
+            <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
+              Codename (Username)
             </label>
             <input
-              id="username"
               type="text"
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full bg-background border border-slate-700 text-white px-4 py-3 rounded-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm transition-all"
+              placeholder="e.g. NEO_01"
             />
           </div>
           <div>
-            <label htmlFor="email" className="text-sm font-medium text-neutral-300">
-              Email Address
+            <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
+              Comms Channel (Email)
             </label>
             <input
-              id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full bg-background border border-slate-700 text-white px-4 py-3 rounded-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm transition-all"
+              placeholder="nomad@mail.com"
             />
           </div>
           <div>
-            <label htmlFor="password" className="text-sm font-medium text-neutral-300">
-              Password
+            <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
+              Security Key
             </label>
             <input
-              id="password"
               type="password"
               required
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 mt-1 text-white bg-neutral-800 border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full bg-background border border-slate-700 text-white px-4 py-3 rounded-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm transition-all"
+              placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <p className="text-xs text-center text-red-500">{error}</p>
+            <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs font-mono text-center">
+              ⚠ ERROR: {error}
+            </div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-3 font-bold text-white transition-all bg-teal-600 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50"
-            >
-              {loading ? 'Creating account...' : 'Sign Up'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-orange-600 text-white font-mono font-bold py-3 px-4 rounded-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+          >
+            {loading ? 'PROCESSING...' : ':: CREATE_ID'}
+          </button>
         </form>
 
-        <p className="mt-6 text-sm text-center text-neutral-400">
-          Already have an account?{' '}
-          <Link href="/login" legacyBehavior>
-            <a className="font-medium text-teal-500 hover:text-teal-400">
-              Log In
+        <p className="mt-8 text-xs text-center font-mono text-slate-500">
+          Have credentials?{' '}
+          <Link href="/" legacyBehavior>
+            <a className="text-primary hover:underline decoration-1 underline-offset-4">
+              :: ACCESS_TERMINAL
             </a>
           </Link>
         </p>

@@ -1,167 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Head from 'next/head';
-import Router from 'next/router';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { useToast } from "@/components/ui/use-toast";
+import AppLayout from '../components/AppLayout';
+import { Check } from 'lucide-react';
 
-const PlanCard = ({ plan, onSelect, isSelected }) => (
-  <Card 
-    onClick={() => onSelect(plan)}
-    className={`w-full text-left transition-all cursor-pointer ${isSelected ? 'border-primary ring-2 ring-primary' : 'hover:border-neutral-300'}`}
-  >
-    <CardHeader>
-      <CardTitle>{plan.name}</CardTitle>
-      <CardDescription>
-        <span className="text-3xl font-bold text-foreground">
-          ₦{Number(plan.price_ngn).toLocaleString()}
-        </span>
-        <span className="text-sm text-muted-foreground"> / mo</span>
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <ul className="space-y-3">
-        <li className="flex items-center">
-          <CheckIcon className="w-5 h-5 mr-2 text-green-500" />
-          <span className="text-muted-foreground">
-            {plan.included_days > 900 ? 'Unlimited' : plan.included_days} check-ins / month
-          </span>
-        </li>
-        <li className="flex items-center">
-          <CheckIcon className="w-5 h-5 mr-2 text-green-500" />
-          <span className="text-muted-foreground">
-            Access to {plan.access_tier === 'STANDARD' ? 'Standard' : 'All'} Spaces
-          </span>
-        </li>
-      </ul>
-    </CardContent>
-  </Card>
-);
-
-export default function PlansPage() {
-  const [plans, setPlans] = useState([]);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const { toast } = useToast();
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) { Router.push('/login'); return; }
-
-        const plansRes = await axios.get(`${API_URL}/api/plans/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setPlans(plansRes.data);
-      } catch (error) {
-        console.error("Failed to fetch data", error);
-        toast({
-          title: "Error",
-          description: "Could not load plans. Please refresh the page.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [API_URL, toast]);
-
-  const handleContinue = async () => {
-    if (!selectedPlan) return;
-    setIsRedirecting(true);
-
-    try {
-      const token = localStorage.getItem('accessToken');
-      
-      // 1. Call our *backend* to get a payment link
-      const response = await axios.post(`${API_URL}/api/payments/initialize/`, 
-        { plan_id: selectedPlan.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      const { authorization_url } = response.data;
-      
-      // 2. Redirect the user to Paystack's page
-      if (authorization_url) {
-        window.location.href = authorization_url;
-      } else {
-        throw new Error("No authorization URL received.");
-      }
-      
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error starting payment",
-        description: "Could not connect to payment gateway. Please try again.",
-        variant: "destructive",
-      });
-      setIsRedirecting(false);
-    }
-  };
-
+export default function Plans() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Head>
-        <title>Select a Plan | Workspace Africa</title>
-      </Head>
+    <AppLayout>
+      <Head><title>Bandwidth Selection | Workspace Africa</title></Head>
 
-      <header className="py-5 border-b">
-        <div className="container flex items-center justify-between px-6 mx-auto max-w-5xl">
-          <img 
-            src="https://res.cloudinary.com/dmqjicpcc/image/upload/v1760286253/WorkSpaceAfrica_bgyjhe.png" 
-            alt="Workspace Africa Logo"
-            className="h-8"
-          />
-        </div>
-      </header>
+      <div className="text-center mb-16 mt-8">
+        <h1 className="text-4xl font-bold text-white mb-2">Select Access Protocol</h1>
+        <p className="text-slate-500 font-mono text-sm tracking-widest uppercase">Choose your bandwidth.</p>
+      </div>
 
-      <main className="container px-6 py-12 mx-auto max-w-5xl">
-        <h1 className="text-4xl font-extrabold md:text-5xl">
-          Choose Your Plan
-        </h1>
-        <p className="mt-4 text-lg text-muted-foreground">
-          You've successfully created your account. Select a plan to get started.
-        </p>
-
-        <div className="grid grid-cols-1 gap-6 mt-12 md:grid-cols-3">
-          {loading ? (
-            <p className="text-muted-foreground">Loading plans...</p>
-          ) : (
-            plans.map(plan => (
-              <PlanCard 
-                key={plan.id} 
-                plan={plan} 
-                onSelect={setSelectedPlan}
-                isSelected={selectedPlan?.id === plan.id}
-              />
-            ))
-          )}
-        </div>
+      <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
         
-        <div className="mt-10 text-center">
-          <Button
-            onClick={handleContinue}
-            disabled={!selectedPlan || isRedirecting}
-            className="w-full max-w-md h-12 text-lg"
-          >
-            {isRedirecting ? 'Redirecting to Paystack...' : 
-              (selectedPlan ? `Continue with ${selectedPlan.name}` : 'Select a Plan to Continue')
-            }
-          </Button>
+        {/* --- TIER 1: FLEX_BASIC --- */}
+        <div className="bg-[#080c14] border border-white/5 p-8 flex flex-col relative group hover:border-slate-600 transition-colors">
+            <div className="text-slate-500 font-mono text-xs uppercase mb-4 tracking-widest">FLEX_BASIC</div>
+            <div className="mb-8">
+                <span className="text-4xl font-bold text-white">₦22,500</span>
+                <span className="text-slate-600 font-mono text-xs">/mo</span>
+            </div>
+            <ul className="space-y-4 mb-8 flex-1">
+                {['8 Days Access', 'Standard Spaces', 'Community WiFi'].map((item) => (
+                    <li key={item} className="flex items-center text-sm text-slate-400 font-mono">
+                        <Check className="w-3 h-3 text-green-500 mr-3" /> {item}
+                    </li>
+                ))}
+            </ul>
+            <button className="btn-outline">ACTIVATE_BASIC</button>
         </div>
-      </main>
-    </div>
+
+        {/* --- TIER 2: FLEX_PRO (Highlighted) --- */}
+        <div className="bg-[#0a0f1c] border-t-2 border-t-[var(--color-accent)] border-x border-b border-white/10 p-8 flex flex-col relative transform md:-translate-y-4 shadow-2xl">
+            <div className="absolute top-0 right-0 bg-[var(--color-accent)] text-white text-[9px] font-mono font-bold px-2 py-1 uppercase">Recommended</div>
+            
+            <div className="text-[var(--color-accent)] font-mono text-xs uppercase mb-4 tracking-widest">FLEX_PRO</div>
+            <div className="mb-8">
+                <span className="text-5xl font-bold text-white">₦45,000</span>
+                <span className="text-slate-600 font-mono text-xs">/mo</span>
+            </div>
+            <ul className="space-y-4 mb-8 flex-1">
+                {['16 Days Access', 'All Spaces (Std + Premium)', 'Meeting Room Credits', 'Priority Support'].map((item) => (
+                    <li key={item} className="flex items-center text-sm text-slate-300 font-mono">
+                        <Check className="w-3 h-3 text-[var(--color-accent)] mr-3" /> {item}
+                    </li>
+                ))}
+            </ul>
+            <button className="btn-primary">ACTIVATE_PRO</button>
+        </div>
+
+        {/* --- TIER 3: FLEX_UNLIMITED --- */}
+        <div className="bg-[#080c14] border border-white/5 p-8 flex flex-col relative group hover:border-slate-600 transition-colors">
+            <div className="text-slate-500 font-mono text-xs uppercase mb-4 tracking-widest">FLEX_UNLIMITED</div>
+            <div className="mb-8">
+                <span className="text-4xl font-bold text-white">₦75,000</span>
+                <span className="text-slate-600 font-mono text-xs">/mo</span>
+            </div>
+            <ul className="space-y-4 mb-8 flex-1">
+                {['Unlimited Days', 'All Locations', 'Guest Passes (4/mo)', 'Dedicated Locker'].map((item) => (
+                    <li key={item} className="flex items-center text-sm text-slate-400 font-mono">
+                        <Check className="w-3 h-3 text-green-500 mr-3" /> {item}
+                    </li>
+                ))}
+            </ul>
+            <button className="btn-outline">ACTIVATE_MAX</button>
+        </div>
+
+      </div>
+    </AppLayout>
   );
 }
-
-const CheckIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);

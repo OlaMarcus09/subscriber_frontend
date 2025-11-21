@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { QrCode, RefreshCw, ShieldCheck } from 'lucide-react';
 
 export default function CheckInPage() {
   const [qrCode, setQrCode] = useState(null);
@@ -13,31 +10,23 @@ export default function CheckInPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
   const fetchCheckInData = async () => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('accessToken');
-      if (!token) { Router.push('/login'); return; }
+      if (!token) { Router.push('/'); return; }
 
-      const [userRes, tokenRes] = await Promise.all([
-        axios.get(`${API_URL}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.post(`${API_URL}/api/check-in/generate/`, {}, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-      
-      setUser(userRes.data);
-      setQrCode(tokenRes.data.code);
+      // Simulated fetch
+      setTimeout(() => {
+          setQrCode("NOMAD-884-X9");
+          setUser({ username: "Olawale", photo_url: null, subscription: { plan: { name: "FLEX_PRO" } } });
+          setLoading(false);
+      }, 1000);
+
     } catch (err) {
-      if (err.response && err.response.status === 401) {
-        localStorage.clear();
-        Router.push('/login');
-      } else {
-        setError(err.response?.data?.error || 'Could not generate code.');
-      }
-    } finally {
-      setLoading(false);
+       setError("CONNECTION_FAILED");
+       setLoading(false);
     }
   };
 
@@ -47,67 +36,72 @@ export default function CheckInPage() {
 
   return (
     <AppLayout activePage="checkin">
-      <Head>
-        <title>Your Check-In Code | Workspace Africa</title>
-      </Head>
+      <Head><title>Access Token | Workspace OS</title></Head>
 
-      <div className="max-w-md mx-auto">
-        <h1 className="text-3xl font-bold text-center text-foreground">
-          Your Digital Key
-        </h1>
-        <p className="mt-2 text-center text-muted-foreground">
-          Show this at the partner's front desk to check in.
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        
+        <div className="text-center mb-8">
+            <h1 className="text-xl font-mono font-bold text-white uppercase tracking-widest mb-2">
+                <ShieldCheck className="w-5 h-5 inline-block mr-2 text-[var(--color-accent)]" />
+                Security Clearance
+            </h1>
+            <p className="text-slate-500 font-mono text-xs">PRESENT TOKEN AT PHYSICAL CHECKPOINT</p>
+        </div>
 
-        <Card className="p-8 mt-8 shadow-xl">
-          <CardContent className="p-0">
-            {loading && (
-              <p className="py-20 text-center text-muted-foreground">Generating your code...</p>
-            )}
-            
-            {error && (
-              <div className="py-20 text-center">
-                <p className="text-lg text-destructive">{error}</p>
-                <Button onClick={fetchCheckInData} className="mt-4">
-                  Try Again
-                </Button>
-              </div>
-            )}
+        {/* --- ID BADGE CONTAINER --- */}
+        <div className="relative w-full max-w-sm bg-[#0a0f1c] border border-white/10 p-1">
+            {/* Corner Markers */}
+            <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-[var(--color-accent)]" />
+            <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[var(--color-accent)]" />
+            <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-[var(--color-accent)]" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-[var(--color-accent)]" />
 
-            {qrCode && user && (
-              <div className="flex flex-col items-center">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={user.photo_url} alt={user.username} />
-                  <AvatarFallback className="text-2xl">
-                    {user.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <p className="mt-3 text-2xl font-bold text-foreground">
-                  {user.username}
-                </p>
-                <p className="text-sm text-primary">
-                  {user.subscription?.plan?.name || 'No Plan Active'}
-                </p>
+            <div className="bg-[#020408] border border-white/5 p-8 flex flex-col items-center relative overflow-hidden">
                 
-                <div className="my-8 text-center">
-                  <p className="text-6xl font-extrabold tracking-widest text-foreground">
-                    {qrCode.slice(0, 3)}-{qrCode.slice(3, 6)}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    (QR code placeholder)
-                  </p>
-                </div>
-                
-                <div className="w-full pt-4 text-center border-t">
-                  <p className="text-lg font-bold text-foreground">
-                    {user.days_used} / {user.total_days > 900 ? 'Unlimited' : user.total_days}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Days Used This Month</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                {/* Scan Line Animation */}
+                {!loading && (
+                    <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-accent)]/50 shadow-[0_0_15px_rgba(255,69,0,0.5)] animate-[scan_3s_ease-in-out_infinite]" />
+                )}
+
+                {loading ? (
+                    <div className="py-20 text-[var(--color-accent)] font-mono text-xs animate-pulse">
+                        &gt; GENERATING_ENCRYPTION...
+                    </div>
+                ) : (
+                    <>
+                        {/* User Photo Placeholder */}
+                        <div className="w-20 h-20 bg-surface border border-white/10 rounded-full flex items-center justify-center text-slate-600 font-mono text-2xl mb-4">
+                            {user?.username?.[0] || 'U'}
+                        </div>
+
+                        <div className="text-center mb-6">
+                            <div className="text-white font-mono font-bold text-lg uppercase">{user?.username}</div>
+                            <div className="text-[var(--color-accent)] font-mono text-xs tracking-widest mt-1">
+                                {user?.subscription?.plan?.name || 'NO_CLEARANCE'}
+                            </div>
+                        </div>
+
+                        {/* The Code */}
+                        <div className="w-full bg-white/5 border border-dashed border-slate-700 p-6 mb-6 relative">
+                            <div className="text-center">
+                                <QrCode className="w-32 h-32 text-white mx-auto opacity-80" />
+                                <div className="mt-4 text-2xl font-mono font-bold text-white tracking-[0.2em] text-glow">
+                                    {qrCode}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={fetchCheckInData}
+                            className="flex items-center text-[10px] font-mono text-slate-500 hover:text-white transition-colors"
+                        >
+                            <RefreshCw className="w-3 h-3 mr-2" />
+                            REFRESH_TOKEN
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
       </div>
     </AppLayout>
   );

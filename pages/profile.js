@@ -1,308 +1,222 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { User, Mail, Phone, Calendar, CreditCard, Settings, HelpCircle, LogOut, Edit3, Star, Zap, Sparkles } from 'lucide-react';
+import { User, CreditCard, Settings, LogOut, Mail, Phone, MapPin, Edit2, Save, X } from 'lucide-react';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  // State for user data
+  const [user, setUser] = useState({ 
+    username: 'Loading...', 
+    email: '...',
+    phone: '...',
+    location: '...',
+    plan: '...'
+  });
 
-  const profileStats = {
-    checkinsThisMonth: 0,
-    favoriteSpace: 'None',
-    memberSince: 'Just now',
-    planUsage: '0/18 days'
-  };
+  // State to handle editing mode
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
-  const subscriptionData = {
-    planName: 'Flex Pro',
-    billingCycle: 'Monthly',
-    price: '₦15,000',
-    nextBilling: 'Dec 5, 2024',
-    status: 'active',
-    totalDays: 18,
-    daysUsed: 0,
-    daysRemaining: 18
-  };
+  const [activeTab, setActiveTab] = useState('details');
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) { Router.push('/login'); return; }
-        
-        const userRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        });
-        
-        setUser(userRes.data);
-      } catch (err) {
-        if (err.response && err.response.status === 401) {
-          localStorage.clear();
-          Router.push('/login');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
+     // Simulating fetching user data
+     setTimeout(() => {
+         const initialData = { 
+             username: "Olawale Marcus", 
+             email: "olawale@workspace.africa",
+             phone: "+234 800 000 0000",
+             location: "Lagos, Nigeria",
+             plan: "FLEX_PRO"
+         };
+         setUser(initialData);
+         setEditForm(initialData);
+     }, 500);
   }, []);
 
   const handleLogout = () => {
     localStorage.clear();
-    Router.push('/login');
+    Router.push('/');
   };
 
-  const StatCard = ({ icon, title, value, subtitle, color = "purple" }) => (
-    <Card className="border-0 bg-gray-900/50 hover:bg-gray-800/50 transition-all duration-300">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-400 text-sm mb-1">{title}</p>
-            <p className="text-white font-bold text-lg">{value}</p>
-            {subtitle && <p className="text-gray-500 text-xs mt-1">{subtitle}</p>}
-          </div>
-          <div className={`w-10 h-10 bg-${color}-500/20 rounded-lg flex items-center justify-center text-${color}-400`}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+  const handleEditToggle = () => {
+    if (!isEditing) {
+        // Reset form to current user data when entering edit mode
+        setEditForm(user);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSave = () => {
+    // Here you would send an API request to save the data
+    setUser(editForm);
+    setIsEditing(false);
+  };
+
+  const handleInputChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const TabButton = ({ id, label, icon: Icon }) => (
+    <button 
+        onClick={() => setActiveTab(id)}
+        className={`flex-1 py-3 flex items-center justify-center space-x-2 text-[10px] font-mono uppercase tracking-widest border-b-2 transition-colors ${activeTab === id ? 'border-[var(--color-accent)] text-white bg-white/5' : 'border-transparent text-slate-500 hover:text-white'}`}
+    >
+        <Icon className="w-4 h-4" />
+        <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 
-  const MenuItem = ({ icon, title, description, action, color = "gray" }) => (
-    <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-800/50 transition-all duration-300 cursor-pointer group">
-      <div className={`w-10 h-10 bg-${color}-500/20 rounded-lg flex items-center justify-center text-${color}-400 group-hover:scale-110 transition-transform`}>
-        {icon}
-      </div>
-      <div className="flex-1">
-        <h3 className="font-semibold text-white text-sm">{title}</h3>
-        <p className="text-gray-400 text-xs">{description}</p>
-      </div>
+  const InfoRow = ({ label, name, value, icon: Icon, isEditable }) => (
+    <div className="flex items-center justify-between py-4 border-b border-white/5 last:border-0">
+        <div className="flex items-center text-slate-400 min-w-[120px]">
+            {Icon && <Icon className="w-4 h-4 mr-3 text-slate-600" />}
+            <span className="text-xs font-mono uppercase">{label}</span>
+        </div>
+        
+        {isEditable ? (
+             <input 
+                name={name}
+                value={editForm[name] || ''}
+                onChange={handleInputChange}
+                className="bg-[#050505] border border-slate-700 text-white px-3 py-1 text-sm font-mono text-right w-full max-w-[200px] focus:border-[var(--color-accent)] focus:outline-none"
+             />
+        ) : (
+             <span className="text-sm text-white font-mono text-right">{value}</span>
+        )}
     </div>
   );
 
   return (
     <AppLayout activePage="profile">
-      <Head>
-        <title>Profile | Workspace Africa</title>
-      </Head>
+      <Head><title>My Profile | Workspace OS</title></Head>
 
-      {/* --- Profile Header --- */}
-      <div className="mb-6">
-        <div className="flex items-center space-x-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-            {user?.username?.charAt(0)?.toUpperCase() || 'U'}
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">{user?.username || 'User'}</h1>
-            <p className="text-gray-400 text-sm">{user?.email || 'user@example.com'}</p>
-          </div>
-          <Button variant="outline" size="sm" className="border-gray-700 text-gray-300 hover:bg-gray-800">
-            <Edit3 className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-        </div>
+      {/* --- ID Header --- */}
+      <div className="flex items-center space-x-4 mb-8 bg-[#0a0f1c] border border-white/10 p-6 relative overflow-hidden">
+         <div className="absolute top-0 right-0 w-20 h-full bg-gradient-to-l from-[var(--color-accent)]/10 to-transparent"></div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 bg-gray-900/50 rounded-lg p-1">
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'subscription', label: 'Subscription' },
-            { id: 'settings', label: 'Settings' }
-          ].map(tab => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 ${
-                activeTab === tab.id 
-                  ? 'bg-purple-600 text-white' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </div>
+         <div className="w-16 h-16 bg-[#050505] border border-slate-700 flex items-center justify-center text-2xl font-mono text-white rounded-full relative z-10">
+            {user.username[0]}
+         </div>
+         <div className="relative z-10">
+            <h1 className="text-xl font-bold text-white font-mono uppercase">{user.username}</h1>
+            <div className="flex items-center mt-1 space-x-2">
+                <span className="text-[9px] font-mono bg-[var(--color-accent)] text-white px-1.5 py-0.5">MEMBER</span>
+                <span className="text-slate-500 font-mono text-xs">{user.plan}</span>
+            </div>
+         </div>
       </div>
 
-      {/* --- Overview Tab --- */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              icon={<Calendar className="w-5 h-5" />}
-              title="Check-ins"
-              value={profileStats.checkinsThisMonth}
-              subtitle="This month"
-              color="purple"
-            />
-            <StatCard
-              icon={<Star className="w-5 h-5" />}
-              title="Favorite Space"
-              value={profileStats.favoriteSpace}
-              color="yellow"
-            />
-          </div>
+      {/* --- Tabs --- */}
+      <div className="flex mb-6 border-b border-white/10">
+        <TabButton id="details" label="My Details" icon={User} />
+        <TabButton id="membership" label="Membership" icon={CreditCard} />
+        <TabButton id="settings" label="Settings" icon={Settings} />
+      </div>
 
-          {/* Usage Progress */}
-          <Card className="border-0 bg-gradient-to-r from-gray-900 to-black border border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-white text-sm">Monthly Usage</h3>
-                <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
-                  {profileStats.planUsage}
-                </Badge>
-              </div>
-              
-              <div className="w-full bg-gray-800 rounded-full h-2 mb-2">
-                <div 
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: '0%' }}
-                ></div>
-              </div>
-              
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>0 days used</span>
-                <span>18 days remaining</span>
-              </div>
-            </CardContent>
-          </Card>
+      {/* --- Tab Content --- */}
+      <div className="bg-[#0a0f1c] border border-white/10 p-6 min-h-[400px]">
+        
+        {activeTab === 'details' && (
+            <div className="animate-fade-in">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-white font-bold">Personal Information</h2>
+                    {isEditing && (
+                        <span className="text-[10px] font-mono text-[var(--color-accent)] animate-pulse">EDITING_MODE_ACTIVE</span>
+                    )}
+                </div>
+                
+                <div className="space-y-1">
+                    <InfoRow label="Full Name" name="username" value={user.username} icon={User} isEditable={isEditing} />
+                    <InfoRow label="Email Address" name="email" value={user.email} icon={Mail} isEditable={isEditing} />
+                    <InfoRow label="Phone Number" name="phone" value={user.phone} icon={Phone} isEditable={isEditing} />
+                    <InfoRow label="Home Base" name="location" value={user.location} icon={MapPin} isEditable={isEditing} />
+                </div>
 
-          {/* Member Since */}
-          <Card className="border-0 bg-gray-900/50 border-gray-800">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Member Since</p>
-                  <p className="text-white font-semibold">{profileStats.memberSince}</p>
+                <div className="mt-8 flex space-x-3">
+                    {!isEditing ? (
+                        <button 
+                            onClick={handleEditToggle}
+                            className="text-[10px] font-mono text-[var(--color-accent)] hover:text-white uppercase tracking-widest border border-[var(--color-accent)] px-4 py-2 hover:bg-[var(--color-accent)] transition-all flex items-center"
+                        >
+                            <Edit2 className="w-3 h-3 mr-2" /> EDIT_PROFILE
+                        </button>
+                    ) : (
+                        <>
+                            <button 
+                                onClick={handleSave}
+                                className="text-[10px] font-mono text-white bg-[var(--color-accent)] uppercase tracking-widest border border-[var(--color-accent)] px-4 py-2 hover:bg-orange-600 transition-all flex items-center"
+                            >
+                                <Save className="w-3 h-3 mr-2" /> SAVE_CHANGES
+                            </button>
+                            <button 
+                                onClick={handleEditToggle}
+                                className="text-[10px] font-mono text-slate-400 hover:text-white uppercase tracking-widest border border-slate-600 px-4 py-2 hover:border-white transition-all flex items-center"
+                            >
+                                <X className="w-3 h-3 mr-2" /> CANCEL
+                            </button>
+                        </>
+                    )}
                 </div>
-                <Sparkles className="w-8 h-8 text-purple-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+        )}
 
-      {/* --- Subscription Tab --- */}
-      {activeTab === 'subscription' && (
-        <div className="space-y-6">
-          {/* Current Plan */}
-          <Card className="border-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <Badge className="bg-green-500/20 text-green-300 border-green-500/30 mb-2">
-                    Active
-                  </Badge>
-                  <h3 className="font-bold text-white text-lg">{subscriptionData.planName}</h3>
-                  <p className="text-gray-400 text-sm">{subscriptionData.billingCycle}</p>
+        {activeTab === 'membership' && (
+            <div className="text-center py-8 animate-fade-in">
+                <div className="inline-block p-4 border border-dashed border-slate-700 rounded-full mb-4">
+                    <CreditCard className="w-8 h-8 text-slate-500" />
                 </div>
-                <div className="text-right">
-                  <p className="text-white font-bold text-xl">{subscriptionData.price}</p>
-                  <p className="text-gray-400 text-sm">per month</p>
-                </div>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-gray-300">
-                  <span>Next Billing</span>
-                  <span>{subscriptionData.nextBilling}</span>
-                </div>
-                <div className="flex justify-between text-gray-300">
-                  <span>Plan Access</span>
-                  <span>Standard + Premium</span>
-                </div>
-                <div className="flex justify-between text-gray-300">
-                  <span>Days Available</span>
-                  <span>{subscriptionData.totalDays} days/month</span>
-                </div>
-              </div>
-              
-              <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white">
-                Manage Subscription
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Plan Features */}
-          <Card className="border-0 bg-gray-900/50 border-gray-800">
-            <CardHeader>
-              <CardTitle className="text-white text-lg">Plan Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[
-                  '18 days per month',
-                  'Access to all standard spaces',
-                  'Premium space access',
-                  'High-speed WiFi',
-                  'Free coffee & tea',
-                  'Community events'
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <Zap className="w-3 h-3 text-green-400" />
+                <div className="text-slate-500 font-mono text-xs uppercase mb-2">Active Plan</div>
+                <div className="text-3xl font-bold text-white font-mono mb-2">FLEX_PRO</div>
+                <div className="text-[var(--color-accent)] font-mono text-lg mb-8">₦45,000<span className="text-xs text-slate-500">/mo</span></div>
+                
+                <div className="max-w-xs mx-auto space-y-3 mb-8">
+                    <div className="flex justify-between text-xs font-mono text-slate-400">
+                        <span>RENEWAL DATE</span>
+                        <span className="text-white">DEC 20, 2025</span>
                     </div>
-                    <span className="text-gray-300 text-sm">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                    <div className="flex justify-between text-xs font-mono text-slate-400">
+                        <span>PAYMENT METHOD</span>
+                        <span className="text-white">VISA •••• 4242</span>
+                    </div>
+                </div>
 
-      {/* --- Settings Tab --- */}
-      {activeTab === 'settings' && (
-        <div className="space-y-4">
-          <MenuItem
-            icon={<User className="w-5 h-5" />}
-            title="Personal Information"
-            description="Update your profile details"
-            color="blue"
-          />
-          <MenuItem
-            icon={<CreditCard className="w-5 h-5" />}
-            title="Payment Methods"
-            description="Manage your payment options"
-            color="purple"
-          />
-          <MenuItem
-            icon={<Settings className="w-5 h-5" />}
-            title="Preferences"
-            description="Customize your experience"
-            color="green"
-          />
-          <MenuItem
-            icon={<HelpCircle className="w-5 h-5" />}
-            title="Help & Support"
-            description="Get help and contact support"
-            color="yellow"
-          />
-        </div>
-      )}
+                <button className="w-full max-w-xs py-3 bg-white text-black font-mono text-xs font-bold hover:bg-slate-200 transition-colors uppercase">
+                    Manage Subscription
+                </button>
+            </div>
+        )}
 
-      {/* --- Logout Button --- */}
-      <div className="mt-8 pt-6 border-t border-gray-800">
-        <Button 
-          variant="outline" 
-          className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-          onClick={handleLogout}
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Log Out
-        </Button>
+        {activeTab === 'settings' && (
+            <div className="space-y-6 animate-fade-in">
+                 <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-[#050505] border border-white/5">
+                        <div>
+                            <div className="text-white text-sm font-bold">Notifications</div>
+                            <div className="text-slate-500 text-xs">Receive email updates</div>
+                        </div>
+                        <div className="w-10 h-5 bg-[var(--color-accent)] rounded-full relative cursor-pointer">
+                            <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-[#050505] border border-white/5">
+                        <div>
+                            <div className="text-white text-sm font-bold">Dark Mode</div>
+                            <div className="text-slate-500 text-xs">Always active</div>
+                        </div>
+                        <div className="text-xs font-mono text-slate-600 uppercase">LOCKED</div>
+                    </div>
+                 </div>
+
+                 <button onClick={handleLogout} className="w-full flex items-center justify-center p-4 border border-red-900/50 text-red-500 hover:bg-red-900/20 transition-colors mt-8">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    <span className="font-mono text-xs uppercase font-bold">Log Out</span>
+                 </button>
+            </div>
+        )}
+
       </div>
     </AppLayout>
   );

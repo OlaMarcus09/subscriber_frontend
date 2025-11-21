@@ -1,80 +1,53 @@
 import React from 'react';
-import Router from 'next/router';
 import Link from 'next/link';
-import { Home, QrCode, User, MapPin, Sparkles, BarChart3 } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { Home, Grid, CreditCard, User, Terminal } from 'lucide-react';
 
-const NavLink = ({ href, children, isActive, icon: Icon }) => (
-  <Link href={href} legacyBehavior>
-    <a className={`
-      flex flex-col items-center justify-center flex-1 py-3
-      transition-all duration-200 relative
-      ${isActive 
-        ? 'text-purple-400 scale-105' 
-        : 'text-gray-500 hover:text-gray-300'
-      }
-    `}>
-      <div className={`relative ${isActive ? 'text-purple-400' : 'text-gray-500'}`}>
-        <Icon className="w-6 h-6" />
-        {isActive && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-        )}
-      </div>
-      <span className="text-xs font-medium mt-1">{children}</span>
-      
-      {/* Active indicator bar */}
-      {isActive && (
-        <div className="absolute top-0 w-full h-0.5 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"></div>
-      )}
-    </a>
-  </Link>
-);
-
-export default function AppLayout({ children, activePage }) {
+const NavLink = ({ href, icon: Icon, label }) => {
+  const router = useRouter();
+  const isActive = router.pathname === href;
+  
   return (
-    <div className="flex flex-col min-h-screen bg-black">
+    <Link href={href} legacyBehavior>
+      <a className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-colors ${isActive ? 'text-[var(--color-accent)]' : 'text-slate-600 hover:text-slate-400'}`}>
+        <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.5} />
+        <span className="text-[9px] font-mono uppercase tracking-widest">{label}</span>
+      </a>
+    </Link>
+  );
+};
+
+export default function AppLayout({ children }) {
+  return (
+    <div className="flex flex-col min-h-screen relative font-sans selection:bg-[var(--color-accent)] selection:text-white">
       
-      {/* --- Modern Header --- */}
-      <header className="sticky top-0 z-10 w-full py-4 bg-black/80 backdrop-blur-md border-b border-gray-800 shadow-lg">
-        <div className="container flex items-center justify-between px-4 mx-auto max-w-lg">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold">
-              W
+      {/* --- OS HEADER BAR (Matches Screenshot) --- */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-background/90 backdrop-blur-md">
+        <div className="flex items-center justify-between px-4 h-10 text-[10px] font-mono tracking-wider text-slate-500">
+            <div className="flex items-center space-x-4">
+                <span className="flex items-center text-white">
+                    <span className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></span>
+                    WORKSPACE_AFRICA_OS
+                </span>
+                <span className="hidden sm:inline">LOC: IBADAN [7.37°N, 3.94°E]</span>
             </div>
-            <span className="font-bold text-lg bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Workspace
-            </span>
-          </div>
-          
-          {/* Premium Badge */}
-          <div className="flex items-center space-x-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full px-3 py-1">
-            <Sparkles className="w-3 h-3 text-yellow-400" />
-            <span className="text-yellow-300 text-xs font-medium">Pro</span>
-          </div>
+            <div>NET_STATUS: ONLINE</div>
         </div>
       </header>
-      
-      {/* --- Main Content Area --- */}
-      <main className="flex-1 w-full max-w-lg p-4 pb-24 mx-auto overflow-y-auto">
+
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 w-full max-w-5xl mx-auto p-6 pb-24">
         {children}
       </main>
 
-      {/* --- Enhanced Bottom Tab Bar --- */}
-      <nav className="fixed bottom-0 left-0 right-0 z-10 h-16 bg-gray-900/80 backdrop-blur-md border-t border-gray-800 shadow-2xl flex px-4">
-        <NavLink href="/app" isActive={activePage === 'home'} icon={Home}>
-          Home
-        </NavLink>
-        <NavLink href="/spaces" isActive={activePage === 'spaces'} icon={MapPin}>
-          Spaces
-        </NavLink>
-        <NavLink href="/checkin" isActive={activePage === 'checkin'} icon={QrCode}>
-          Check-In
-        </NavLink>
-        <NavLink href="/analytics" isActive={activePage === 'analytics'} icon={BarChart3}>
-          Analytics
-        </NavLink>
-        <NavLink href="/profile" isActive={activePage === 'profile'} icon={User}>
-          Profile
-        </NavLink>
+      {/* --- BOTTOM HUD NAVIGATION --- */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 h-20 bg-[#050505]/95 border-t border-white/10 backdrop-blur-xl">
+        <div className="flex items-center justify-around h-full max-w-lg mx-auto">
+          <NavLink href="/dashboard" icon={Home} label="Home" />
+          <NavLink href="/spaces" icon={Grid} label="Spaces" />
+          <NavLink href="/plans" icon={CreditCard} label="Billing" />
+          <NavLink href="/profile" icon={User} label="ID_Card" />
+        </div>
       </nav>
     </div>
   );
