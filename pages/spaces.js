@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Router from 'next/router';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
 import { MapPin, Wifi, Coffee, Zap, Search, Filter, Cpu, Battery } from 'lucide-react';
 
-// Simple UI Components
 const Badge = ({ children, variant = 'default' }) => {
   const styles = variant === 'premium' 
-    ? 'bg-primary/10 text-primary border-primary/30' 
-    : 'bg-slate-800 text-slate-400 border-slate-700';
+    ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/30' 
+    : 'bg-[var(--bg-input)] text-[var(--text-muted)] border-[var(--border-color)]';
     
   return (
     <span className={`${styles} text-[10px] font-mono px-2 py-0.5 rounded-sm border uppercase tracking-wider`}>
@@ -26,7 +24,6 @@ export default function SpacesPage() {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
-    // Real Data Fallback
     const realSpaces = [
         { id: 1, name: "Seb's Hub", address: "32 Awolowo Ave, Bodija", access_tier: "PREMIUM", amenities: ["AC", "Kitchen", "WiFi"] },
         { id: 2, name: "Worknub", address: "West One, Agodi GRA", access_tier: "PREMIUM", amenities: ["AC", "Conf"] },
@@ -36,25 +33,9 @@ export default function SpacesPage() {
         { id: 6, name: "Cyberhaven", address: "Okunmade St, Mokola", access_tier: "STANDARD", amenities: ["WiFi"] },
         { id: 7, name: "Atelier Café", address: "Jericho, Ibadan", access_tier: "PREMIUM", amenities: ["Coffee", "WiFi", "AC"] },
     ];
-    
-    const fetchSpaces = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        // Attempt API call, fallback to real data if fails
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/spaces/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSpaces(response.data);
-        setFilteredSpaces(response.data);
-      } catch (err) {
-        console.warn('API unavailable, loading real location data');
-        setSpaces(realSpaces);
-        setFilteredSpaces(realSpaces);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSpaces();
+    setSpaces(realSpaces);
+    setFilteredSpaces(realSpaces);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -72,17 +53,16 @@ export default function SpacesPage() {
   }, [searchTerm, activeFilter, spaces]);
 
   const SpaceCard = ({ space }) => (
-    <div className="group relative bg-[#0a0f1c] border border-white/10 hover:border-[var(--color-accent)] transition-all duration-300 overflow-hidden rounded-sm">
-      {/* Tech decorative corner */}
-      <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-slate-600 group-hover:border-[var(--color-accent)] transition-colors" />
+    <div className="group relative bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-[var(--color-accent)] transition-all duration-300 overflow-hidden rounded-sm shadow-sm">
+      <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[var(--text-muted)] group-hover:border-[var(--color-accent)] transition-colors" />
       
       <div className="p-4">
         <div className="flex justify-between items-start mb-3">
             <div>
-                <h3 className="text-white font-mono font-bold text-lg leading-tight group-hover:text-[var(--color-accent)] transition-colors">
+                <h3 className="text-[var(--text-main)] font-mono font-bold text-lg leading-tight group-hover:text-[var(--color-accent)] transition-colors">
                     {space.name}
                 </h3>
-                <div className="flex items-center text-xs text-slate-500 mt-1 font-mono">
+                <div className="flex items-center text-xs text-[var(--text-muted)] mt-1 font-mono">
                     <MapPin className="w-3 h-3 mr-1" />
                     {space.address}
                 </div>
@@ -92,24 +72,23 @@ export default function SpacesPage() {
             </Badge>
         </div>
 
-        {/* Data Grid for Amenities */}
-        <div className="grid grid-cols-3 gap-2 py-3 border-t border-dashed border-slate-800">
-            <div className="flex items-center space-x-2 text-xs text-slate-400">
+        <div className="grid grid-cols-3 gap-2 py-3 border-t border-dashed border-[var(--border-color)]">
+            <div className="flex items-center space-x-2 text-xs text-[var(--text-muted)]">
                 <Wifi className="w-3 h-3" /> <span>NET: OK</span>
             </div>
             {space.amenities?.includes('AC') && (
-                <div className="flex items-center space-x-2 text-xs text-slate-400">
+                <div className="flex items-center space-x-2 text-xs text-[var(--text-muted)]">
                     <Zap className="w-3 h-3" /> <span>PWR: 100%</span>
                 </div>
             )}
             {space.amenities?.includes('Coffee') && (
-                <div className="flex items-center space-x-2 text-xs text-slate-400">
+                <div className="flex items-center space-x-2 text-xs text-[var(--text-muted)]">
                     <Coffee className="w-3 h-3" /> <span>FUEL</span>
                 </div>
             )}
         </div>
 
-        <button className="w-full mt-3 bg-slate-800/20 hover:bg-[var(--color-accent)] hover:text-white border border-slate-700 hover:border-[var(--color-accent)] text-slate-300 text-xs font-mono py-2 px-4 transition-all uppercase tracking-widest">
+        <button className="w-full mt-3 bg-[var(--bg-input)] hover:bg-[var(--color-accent)] hover:text-white border border-[var(--border-color)] hover:border-[var(--color-accent)] text-[var(--text-muted)] text-xs font-mono py-2 px-4 transition-all uppercase tracking-widest">
             :: INITIATE_BOOKING
         </button>
       </div>
@@ -123,43 +102,40 @@ export default function SpacesPage() {
       </Head>
 
       <div className="mb-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-end justify-between border-b border-white/10 pb-4">
+        <div className="flex items-end justify-between border-b border-[var(--border-color)] pb-4">
           <div>
-            <h1 className="text-2xl font-bold text-white font-mono tracking-tight">SECTOR MAP</h1>
-            <p className="text-slate-500 text-xs font-mono mt-1">
+            <h1 className="text-2xl font-bold text-[var(--text-main)] font-mono tracking-tight">SECTOR MAP</h1>
+            <p className="text-[var(--text-muted)] text-xs font-mono mt-1">
               &gt; LOCATING AVAILABLE NODES...
             </p>
           </div>
-          <Cpu className="w-6 h-6 text-slate-700" />
+          <Cpu className="w-6 h-6 text-[var(--text-muted)]" />
         </div>
 
-        {/* Search & Filter Bar */}
         <div className="flex space-x-2">
             <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                 <input 
                     type="text" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="SEARCH_COORDS..."
-                    className="w-full bg-[#0a0f1c] border border-slate-700 text-white pl-9 pr-4 py-2.5 text-xs font-mono focus:border-[var(--color-accent)] focus:ring-0 outline-none rounded-sm"
+                    className="w-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-main)] pl-9 pr-4 py-2.5 text-xs font-mono focus:border-[var(--color-accent)] focus:ring-0 outline-none rounded-sm"
                 />
             </div>
-            <button className="px-3 bg-[#0a0f1c] border border-slate-700 text-slate-400 hover:text-white hover:border-white transition-colors">
+            <button className="px-3 bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
                 <Filter className="w-4 h-4" />
             </button>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex space-x-1 p-1 bg-white/5 border border-white/5 rounded-sm">
+        <div className="flex space-x-1 p-1 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-sm">
             {['all', 'premium', 'standard'].map(filter => (
                 <button
                     key={filter}
                     onClick={() => setActiveFilter(filter)}
                     className={`
                         flex-1 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-all rounded-sm
-                        ${activeFilter === filter ? 'bg-[var(--color-accent)] text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}
+                        ${activeFilter === filter ? 'bg-[var(--color-accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}
                     `}
                 >
                     {filter}
@@ -168,7 +144,6 @@ export default function SpacesPage() {
         </div>
       </div>
 
-      {/* Grid Content */}
       <div className="space-y-4">
         {loading ? (
              <div className="text-center py-12 font-mono text-xs text-[var(--color-accent)] animate-pulse">
@@ -176,7 +151,7 @@ export default function SpacesPage() {
              </div>
         ) : (
             <>
-                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase">
+                <div className="flex justify-between items-center text-[10px] font-mono text-[var(--text-muted)] uppercase">
                     <span>Active Nodes: {filteredSpaces.length}</span>
                     <Battery className="w-3 h-3 text-[var(--color-accent)]" />
                 </div>

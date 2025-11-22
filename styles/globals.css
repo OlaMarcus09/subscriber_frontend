@@ -1,53 +1,45 @@
 @import "tailwindcss";
 
 @theme {
-  /* --- FONTS --- */
   --font-sans: "Plus Jakarta Sans", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
-
-  /* --- COLORS (Matched to Screenshots) --- */
-  --color-background: #020408; /* Near Black */
-  --color-surface: #0a0f1c;    /* Very Dark Navy */
-  --color-accent: #FF4500;     /* The "Activate" Orange-Red */
-  --color-accent-hover: #ff5722;
-  --color-grid: #1a202c;       /* Subtle Grid Line */
-  --color-text-dim: #64748b;
+  --color-primary: #FF5E3A;
 }
 
 @layer base {
+  :root {
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --grid-color: #e2e8f0;
+    --color-accent: #FF5E3A;
+  }
+
+  .dark {
+    --bg-main: #020617;
+    --bg-surface: #0f172a;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border-color: #1e293b;
+    --grid-color: #1e293b;
+    --color-accent: #FF5E3A;
+  }
+
   body {
-    background-color: var(--color-background);
-    color: #e2e8f0;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     font-family: var(--font-sans);
-    
-    /* The "Blueprint" Grid Background */
-    background-size: 50px 50px;
+    background-size: 40px 40px;
     background-image: 
-      linear-gradient(to right, rgba(30, 41, 59, 0.5) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
-    background-position: center top;
+      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
   }
-
-  h1, h2, h3, h4 {
-    color: white;
-    letter-spacing: -0.02em;
-  }
+  
+  /* Helper classes for hardcoded overrides */
+  .text-white { color: var(--text-main); }
+  .bg-surface { background-color: var(--bg-surface); }
+  .border-white\/10 { border-color: var(--border-color); }
+  .border-white\/5 { border-color: var(--border-color); }
 }
-
-/* --- UTILITIES --- */
-@utility btn-primary {
-  @apply w-full py-4 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-mono text-xs font-bold uppercase tracking-widest transition-all;
-}
-
-@utility btn-outline {
-  @apply w-full py-4 bg-transparent border border-slate-700 hover:border-white text-slate-300 hover:text-white font-mono text-xs font-bold uppercase tracking-widest transition-all;
-}
-
-@utility card-terminal {
-  @apply bg-surface/40 border border-white/5 backdrop-blur-sm p-6 relative;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--color-background); }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
