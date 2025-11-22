@@ -3,6 +3,7 @@ import axios from 'axios';
 import Router from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
+import { Terminal, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -19,20 +20,16 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      // Simulate API success for design demo if env is missing
-      if (!API_URL) {
-          setTimeout(() => Router.push('/plans'), 1500);
-          return;
-      }
-
-      await axios.post(`${API_URL}/api/users/register/`, {
+      // 1. Register
+      await axios.post(\`\${API_URL}/api/users/register/\`, {
         email,
         username,
         password,
         password2: password,
       });
 
-      const response = await axios.post(`${API_URL}/api/auth/token/`, {
+      // 2. Auto Login to get Token
+      const response = await axios.post(\`\${API_URL}/api/auth/token/\`, {
         email,
         password,
       });
@@ -40,13 +37,15 @@ export default function SignUpPage() {
       const { access, refresh } = response.data;
       localStorage.setItem('accessToken', access);
       localStorage.setItem('refreshToken', refresh);
+      
       Router.push('/plans');
 
     } catch (err) {
+      console.error(err);
       if (err.response?.data?.email) {
-        setError('EMAIL_ALREADY_REGISTERED_IN_GRID');
+        setError('EMAIL_ALREADY_REGISTERED');
       } else {
-        setError('SYSTEM_ERROR: PLEASE_RETRY');
+        setError('CONNECTION_REFUSED: CHECK CONSOLE');
       }
     } finally {
       setLoading(false);
@@ -54,89 +53,91 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background text-slate-300 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-[#020408] transition-colors duration-300 bg-grid-pattern">
       <Head>
-        <title>New Nomad | Workspace Africa</title>
+        <title>New Nomad | Workspace OS</title>
       </Head>
 
-      {/* Background Grid Decoration */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
-      
-      <div className="w-full max-w-sm p-8 relative z-10 bg-surface/80 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl">
-        <div className="text-center mb-8">
-            <div className="inline-block px-2 py-0.5 mb-4 border border-primary/50 text-primary text-[10px] font-mono tracking-widest uppercase">
-                New User Protocol
+      <div className="w-full max-w-md relative z-10">
+        
+        <div className="bg-white dark:bg-[#0a0f1c] border border-slate-200 dark:border-white/10 p-8 rounded-sm shadow-xl backdrop-blur-sm">
+            <div className="text-center mb-8">
+                <div className="inline-block px-2 py-0.5 mb-4 border border-orange-500/50 text-orange-500 text-[10px] font-mono tracking-widest uppercase">
+                    New User Protocol
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+                Initialize ID
+                </h1>
             </div>
-            <h1 className="text-2xl font-bold text-white font-mono">
-            Initialize ID
-            </h1>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                  Codename (Username)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-slate-100 dark:bg-[#050505] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-4 py-3 rounded-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none font-mono text-sm transition-colors placeholder-slate-400"
+                  placeholder="e.g. NEO_01"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                  Comms Channel (Email)
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-100 dark:bg-[#050505] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-4 py-3 rounded-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none font-mono text-sm transition-colors placeholder-slate-400"
+                  placeholder="nomad@mail.com"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono text-slate-500 uppercase mb-1">
+                  Security Key
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-100 dark:bg-[#050505] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white px-4 py-3 rounded-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none font-mono text-sm transition-colors placeholder-slate-400"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/50 text-red-500 text-xs font-mono flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4 mr-2" /> {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#FF4500] hover:bg-orange-600 text-white font-mono font-bold py-4 px-4 rounded-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+              >
+                {loading ? 'PROCESSING...' : ':: CREATE_ID'}
+              </button>
+            </form>
+
+            <div className="mt-8 text-center">
+                <p className="text-xs font-mono text-slate-500">
+                Have credentials?{' '}
+                <Link href="/" legacyBehavior>
+                    <a className="text-[#FF4500] hover:underline decoration-1 underline-offset-4">
+                    :: ACCESS_TERMINAL
+                    </a>
+                </Link>
+                </p>
+            </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
-              Codename (Username)
-            </label>
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-background border border-slate-700 text-white px-4 py-3 rounded-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm transition-all"
-              placeholder="e.g. NEO_01"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
-              Comms Channel (Email)
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-background border border-slate-700 text-white px-4 py-3 rounded-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm transition-all"
-              placeholder="nomad@mail.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-mono text-slate-500 uppercase mb-1">
-              Security Key
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-background border border-slate-700 text-white px-4 py-3 rounded-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-mono text-sm transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-400 text-xs font-mono text-center">
-              ⚠ ERROR: {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary hover:bg-orange-600 text-white font-mono font-bold py-3 px-4 rounded-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-          >
-            {loading ? 'PROCESSING...' : ':: CREATE_ID'}
-          </button>
-        </form>
-
-        <p className="mt-8 text-xs text-center font-mono text-slate-500">
-          Have credentials?{' '}
-          <Link href="/" legacyBehavior>
-            <a className="text-primary hover:underline decoration-1 underline-offset-4">
-              :: ACCESS_TERMINAL
-            </a>
-          </Link>
-        </p>
       </div>
     </div>
   );
