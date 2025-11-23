@@ -3,7 +3,7 @@ import axios from 'axios';
 import Router from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
-import { Terminal, ArrowRight, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -20,16 +20,16 @@ export default function SignUpPage() {
     setLoading(true);
 
     try {
-      // 1. Register
-      await axios.post(\`\${API_URL}/api/users/register/\`, {
+      // FIX: Using standard string concatenation (+) to prevent template errors
+      await axios.post(API_URL + '/api/users/register/', {
         email,
         username,
         password,
         password2: password,
       });
 
-      // 2. Auto Login to get Token
-      const response = await axios.post(\`\${API_URL}/api/auth/token/\`, {
+      // Auto Login
+      const response = await axios.post(API_URL + '/api/auth/token/', {
         email,
         password,
       });
@@ -42,7 +42,7 @@ export default function SignUpPage() {
 
     } catch (err) {
       console.error(err);
-      if (err.response?.data?.email) {
+      if (err.response && err.response.data && err.response.data.email) {
         setError('EMAIL_ALREADY_REGISTERED');
       } else {
         setError('CONNECTION_REFUSED: CHECK CONSOLE');
