@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
 import { CreditCard, Check, Zap, QrCode, Shield, Infinity } from 'lucide-react';
-import { PaystackButton } from 'react-paystack';
+import dynamic from 'next/dynamic';
+
+// FIX: Load Paystack dynamically so it doesn't crash the server build
+const PaystackButton = dynamic(
+  () => import('react-paystack').then((mod) => mod.PaystackButton),
+  { ssr: false }
+);
 
 export default function PlansPage() {
   const [activeTab, setActiveTab] = useState('subs');
-  // In a real app, get this from the logged-in user context
   const [userEmail, setUserEmail] = useState('user@example.com');
 
   // --- CONFIGURATION ---
@@ -18,14 +23,11 @@ export default function PlansPage() {
     unlimited: { code: 'PLN_bn2p2x82io1fooy', price: 90000, name: 'Flex Unlimited' }
   };
 
-  // Day Pass Config (No Plan Code, just Amount)
   const dayPassPrice = 4500;
 
-  // --- HANDLERS ---
   const handleSuccess = (reference) => {
     console.log(reference);
     alert("Payment Successful! Reference: " + reference.reference);
-    // TODO: Send reference to backend to activate subscription/generate token
   };
 
   const handleClose = () => {
@@ -37,10 +39,10 @@ export default function PlansPage() {
     
     const componentProps = {
         email: userEmail,
-        amount: plan.price * 100, // Convert to kobo
+        amount: plan.price * 100,
         publicKey,
         text: 'ACTIVATE PLAN',
-        plan: plan.code, // This enables recurring billing
+        plan: plan.code,
         onSuccess: handleSuccess,
         onClose: handleClose,
     };
@@ -94,8 +96,6 @@ export default function PlansPage() {
       {/* --- SUBSCRIPTION CARDS --- */}
       {activeTab === 'subs' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto pb-12">
-            
-            {/* BASIC */}
             <PlanCard 
                 planKey="basic" 
                 days="8 Days Access" 
@@ -103,8 +103,6 @@ export default function PlansPage() {
                 features={["Community WiFi"]}
                 icon={Shield}
             />
-
-            {/* PRO */}
             <PlanCard 
                 planKey="pro" 
                 days="16 Days Access" 
@@ -113,8 +111,6 @@ export default function PlansPage() {
                 icon={Zap}
                 recommended={true}
             />
-
-            {/* UNLIMITED */}
             <PlanCard 
                 planKey="unlimited" 
                 days="Unlimited Access" 
@@ -122,7 +118,6 @@ export default function PlansPage() {
                 features={["Guest Passes (2/mo)", "Dedicated Locker"]}
                 icon={Infinity}
             />
-
         </div>
       )}
 
@@ -133,11 +128,11 @@ export default function PlansPage() {
                 <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-accent)] animate-pulse"></div>
                 <div className="w-16 h-16 bg-[var(--bg-input)] rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--color-accent)]"><QrCode className="w-8 h-8" /></div>
                 <h2 className="text-2xl font-bold text-[var(--text-main)] font-mono mb-2">Single Day Pass</h2>
-                <p className="text-[var(--text-muted)] text-sm mb-6">Instant 24h access to any Standard or Premium hub.</p>
+                <p className="text-[var(--text-muted)] text-sm mb-6">Instant 24h access to any Standard or Premium space.</p>
 
                 <div className="mb-8 p-4 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-sm">
                     <div className="text-3xl font-bold text-[var(--text-main)] font-mono">₦{dayPassPrice.toLocaleString()}</div>
-                    <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">FLAT RATE / ONE-OFF</div>
+                    <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">FLAT RATE / DAY</div>
                 </div>
                 
                 <div className="w-full py-4 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold uppercase hover:opacity-90 transition-all flex items-center justify-center cursor-pointer">
