@@ -10,15 +10,15 @@ export default function AppHome() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) { 
-             console.log("No token found, switching to Demo Mode");
-             throw new Error("DEMO_MODE");
+             Router.push('/');
+             return;
         }
 
         const [userRes, spacesRes] = await Promise.all([
@@ -32,19 +32,12 @@ export default function AppHome() {
         
         setUser(userRes.data);
         setSpaces(spacesRes.data);
-        setLoading(false);
         
       } catch (err) {
-        // --- DEMO DATA FALLBACK ---
-        setTimeout(() => {
-            setUser({ username: "Olawale", email: "demo@workspace.africa" });
-            setSpaces([
-                { id: 1, name: "Seb's Hub", address: "Bodija, Ibadan", access_tier: "PREMIUM" },
-                { id: 3, name: "Stargate Workstation", address: "Cocoa House, Dugbe", access_tier: "STANDARD" },
-                { id: 4, name: "The Bunker", address: "Ring Road, Ibadan", access_tier: "PREMIUM" },
-            ]);
-            setLoading(false);
-        }, 1000);
+        console.error("Dashboard Load Error:", err);
+        // No fallback mock data. Real data or empty.
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -73,7 +66,6 @@ export default function AppHome() {
 
   const SpaceCard = ({ space }) => (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 relative group hover:border-[var(--text-muted)] transition-all shadow-sm">
-        {/* Tier Badge */}
         <div className="absolute top-3 right-3">
             <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 border ${space.access_tier === 'PREMIUM' ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-[var(--border-color)] text-[var(--text-muted)]'}`}>
                 {space.access_tier === 'PREMIUM' ? 'TIER_1' : 'TIER_2'}
@@ -97,7 +89,6 @@ export default function AppHome() {
     <AppLayout activePage="home">
       <Head><title>Dashboard | Workspace OS</title></Head>
 
-      {/* --- OS Header --- */}
       <div className="mb-8 border-b border-[var(--border-color)] pb-6">
         <div className="flex justify-between items-end">
             <div>
@@ -106,7 +97,7 @@ export default function AppHome() {
                     <span className="text-xs font-mono uppercase tracking-widest">System_Ready</span>
                 </div>
                 <h1 className="text-2xl text-[var(--text-main)] font-bold font-mono uppercase">
-                    WELCOME_BACK, {user?.username || 'NOMAD'}
+                    WELCOME_BACK, {user?.username || '...'}
                 </h1>
             </div>
             <div className="hidden md:block text-right">
@@ -114,24 +105,10 @@ export default function AppHome() {
                 <div className="text-xl font-mono text-[var(--text-main)]">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
             </div>
         </div>
-        
-        {/* Command Line Search */}
-        <div className="mt-6 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] w-4 h-4" />
-            <input 
-                placeholder="> EXECUTE SEARCH_QUERY..." 
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] font-mono text-xs py-3 pl-12 focus:border-[var(--color-accent)] focus:ring-0 outline-none transition-colors placeholder:text-[var(--text-muted)]"
-            />
-        </div>
       </div>
 
-      {/* --- Main Grid Layout --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Left Col: Modules */}
         <div className="md:col-span-2 space-y-6">
-            
-            {/* Quick Actions Grid */}
             <div>
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest">Command_Modules</h2>
@@ -144,26 +121,8 @@ export default function AppHome() {
                     <QuickAction icon={<Calendar className="w-5 h-5" />} title="Protocol Status" description="Manage subscription" action="/profile" />
                 </div>
             </div>
-
-            {/* Usage Capacity Bar */}
-            <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-5 shadow-sm">
-                <div className="flex justify-between items-end mb-3">
-                    <div>
-                        <div className="text-[10px] font-mono text-[var(--color-accent)] uppercase mb-1">Bandwidth Usage</div>
-                        <div className="text-[var(--text-main)] font-mono text-lg">0 / 18 DAYS</div>
-                    </div>
-                    <div className="text-xs font-mono text-[var(--text-muted)]">REMAINING: 18</div>
-                </div>
-                <div className="w-full bg-[var(--bg-input)] h-1.5 border border-[var(--border-color)]">
-                    <div className="bg-[var(--color-accent)] h-full w-[5%] relative">
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-4 bg-[var(--text-muted)]/20"></div>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
-        {/* Right Col: Active Nodes */}
         <div>
             <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest">Nearby_Nodes</h2>
@@ -173,15 +132,16 @@ export default function AppHome() {
             <div className="space-y-3">
                 {loading ? (
                     <div className="text-xs font-mono text-[var(--text-muted)] animate-pulse">&gt; SCANNING NETWORK...</div>
-                ) : (
+                ) : spaces.length > 0 ? (
                     spaces.slice(0, 3).map(space => <SpaceCard key={space.id} space={space} />)
+                ) : (
+                    <div className="text-[10px] font-mono text-[var(--text-muted)]">NO NODES DETECTED</div>
                 )}
                 <button onClick={() => Router.push('/spaces')} className="w-full py-2 border border-dashed border-[var(--border-color)] text-[var(--text-muted)] font-mono text-[10px] hover:text-[var(--text-main)] hover:border-[var(--text-main)] transition-colors">
                     VIEW_ALL_NODES
                 </button>
             </div>
         </div>
-
       </div>
     </AppLayout>
   );
