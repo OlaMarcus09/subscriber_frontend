@@ -1,16 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import axios from 'axios';
+import Router from 'next/router';
 import AppLayout from '../components/AppLayout';
 import { Zap } from 'lucide-react';
 
 export default function AnalyticsPage() {
-  const [analytics] = useState({
-     overview: { total_checkins: 12, days_used: 3 },
-     weekly_pattern: [
-        { day: 'M', val: 10 }, { day: 'T', val: 40 }, { day: 'W', val: 25 }, 
-        { day: 'T', val: 60 }, { day: 'F', val: 30 }, { day: 'S', val: 5 }, { day: 'S', val: 0 }
-     ]
+  const [analytics, setAnalytics] = useState({
+     total_checkins: 0, 
+     days_used: 0,
+     days_total: 18,
+     health_pct: 0
   });
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
+
+  useEffect(() => {
+      const fetchData = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) { Router.push('/'); return; }
+
+        try {
+            const res = await axios.get(`${API_URL}/api/users/me/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const userData = res.data;
+            // Calculate usage based on subscription
+            const used = userData.days_used_this_month || 0;
+            const total = userData.subscription?.plan?.included_days || 18;
+            const pct = Math.min((used / total) * 100, 100);
+
+            setAnalytics({
+                total_checkins: userData.total_checkins || 0,
+                days_used: used,
+                days_total: total,
+                health_pct: pct
+            });
+        } catch (err) {
+            console.error(err);
+        }
+      };
+      fetchData();
+  }, []);
 
   const DataCard = ({ label, value, sub }) => (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-5 shadow-sm">
@@ -30,24 +61,8 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8">
-        <DataCard label="Total Logins" value={analytics.overview.total_checkins} sub="+12% THIS_CYCLE" />
-        <DataCard label="Bandwidth" value="3/18" sub="DAYS USED" />
-      </div>
-
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 mb-6 relative shadow-sm">
-         <div className="absolute top-0 left-0 bg-[var(--color-accent)] text-white text-[9px] font-mono px-2 py-0.5">WEEKLY_PATTERN</div>
-         
-         <div className="flex items-end justify-between h-40 mt-6 space-x-2">
-            {analytics.weekly_pattern.map((d, i) => (
-                <div key={i} className="flex flex-col items-center flex-1 h-full justify-end group">
-                    <div 
-                        style={{ height: `${d.val}%` }} 
-                        className="w-full bg-[var(--bg-input)] group-hover:bg-[var(--color-accent)] transition-all duration-300 relative min-h-[4px]"
-                    ></div>
-                    <div className="text-[10px] font-mono text-[var(--text-muted)] mt-2">{d.day}</div>
-                </div>
-            ))}
-         </div>
+        <DataCard label="Total Logins" value={analytics.total_checkins} sub="LIFETIME" />
+        <DataCard label="Bandwidth" value={`${analytics.days_used}/${analytics.days_total}`} sub="DAYS USED" />
       </div>
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 shadow-sm">
@@ -56,11 +71,11 @@ export default function AnalyticsPage() {
             <span className="text-xs font-mono text-[var(--text-main)] uppercase">Subscription Health</span>
         </div>
         <div className="w-full bg-[var(--bg-input)] h-2 mb-2 overflow-hidden rounded-full">
-            <div className="h-full bg-[var(--color-accent)] w-[15%]"></div>
+            <div className="h-full bg-[var(--color-accent)] transition-all duration-1000" style={{ width: `${analytics.health_pct}%` }}></div>
         </div>
         <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
-            <span>15% UTILIZED</span>
-            <span>RENEWAL: 15 DAYS</span>
+            <span>{analytics.health_pct.toFixed(0)}% UTILIZED</span>
+            <span>RESETS MONTHLY</span>
         </div>
       </div>
 
