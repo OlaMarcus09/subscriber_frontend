@@ -6,7 +6,6 @@ import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-// Dynamically load Paystack
 const PaystackButton = dynamic(
   () => import('react-paystack').then((mod) => mod.PaystackButton),
   { ssr: false }
@@ -17,36 +16,20 @@ export default function PlansPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // --- CONFIGURATION ---
   const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
 
-  // --- UPDATED PLAN CODES ---
-  const plans = {
-    basic: { code: 'PLN_2ah21zqr7w3jpdp', price: 27000, name: 'Flex Basic' },
-    pro: { code: 'PLN_qhytgtizn15iepe', price: 55000, name: 'Flex Pro' },
-    unlimited: { code: 'PLN_31ksupido3h8d0b', price: 90000, name: 'Flex Unlimited' }
-  };
-
-  const dayPassPrice = 4500;
-
-  // Fetch User Data
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-             Router.push('/');
-             return;
-        }
+        if (!token) { Router.push('/'); return; }
         const response = await axios.get(`${API_URL}/api/users/me/`, {
              headers: { Authorization: `Bearer ${token}` }
         });
         setUser(response.data);
       } catch (err) {
-        console.error("Failed to load user for payment:", err);
-        // Fallback for demo/testing if API fails or no token
-        setUser({ email: "test@workspace.africa" }); 
+        console.error("User Load Error:", err);
       } finally {
         setLoading(false);
       }
@@ -54,27 +37,22 @@ export default function PlansPage() {
     fetchUser();
   }, []);
 
-  const handleSuccess = async (reference) => {
-    console.log(reference);
+  const handleSuccess = (reference) => {
     alert("Payment Successful! Ref: " + reference.reference);
-    // In production: Post reference to backend here
   };
 
-  const handleClose = () => {
-    console.log('Payment closed');
-  };
+  const handleClose = () => console.log('Payment closed');
 
-  const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false }) => {
-    const plan = plans[planKey];
-    
+  // Reusable Card Component
+  const PlanCard = ({ name, price, days, tier, planCode, features, icon: Icon, recommended }) => {
     if (loading || !user) return <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] animate-pulse">Loading...</div>;
 
     const componentProps = {
         email: user.email,
-        amount: plan.price * 100, // Kobo
+        amount: price * 100, // Ensure strict multiplication
         publicKey,
         text: 'ACTIVATE PLAN',
-        plan: plan.code, // Uses the new Plan ID
+        plan: planCode,
         onSuccess: handleSuccess,
         onClose: handleClose,
     };
@@ -85,20 +63,18 @@ export default function PlansPage() {
             
             <div className="flex items-center space-x-2 mb-4 text-[var(--color-accent)]">
                 <Icon className="w-5 h-5" />
-                <span className="font-mono text-xs uppercase tracking-widest">{plan.name}</span>
+                <span className="font-mono text-xs uppercase tracking-widest">{name}</span>
             </div>
             
             <div className="mb-6">
-                <span className="text-3xl font-bold text-[var(--text-main)] font-mono">₦{plan.price.toLocaleString()}</span>
+                <span className="text-3xl font-bold text-[var(--text-main)] font-mono">₦{price.toLocaleString()}</span>
                 <span className="text-[var(--text-muted)] font-mono text-xs">/mo</span>
             </div>
             
             <ul className="space-y-3 mb-8 text-sm text-[var(--text-main)] font-mono flex-1">
                 <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" /> {days}</li>
                 <li className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" /> {tier}</li>
-                {features.map((f, i) => (
-                    <li key={i} className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" /> {f}</li>
-                ))}
+                {features.map((f, i) => <li key={i} className="flex items-center"><Check className="w-4 h-4 mr-2 text-green-500" /> {f}</li>)}
             </ul>
             
             <div className="w-full py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-all uppercase text-center cursor-pointer shadow-lg">
@@ -119,55 +95,60 @@ export default function PlansPage() {
 
       <div className="flex justify-center mb-10">
         <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-1 rounded-sm flex space-x-1">
-            <button onClick={() => setActiveTab('subs')} className={`px-6 py-2 text-xs font-mono uppercase tracking-widest transition-all ${activeTab === 'subs' ? 'bg-[var(--color-accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>Monthly Subs</button>
-            <button onClick={() => setActiveTab('daypass')} className={`px-6 py-2 text-xs font-mono uppercase tracking-widest transition-all ${activeTab === 'daypass' ? 'bg-[var(--color-accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>Day Pass</button>
+            <button onClick={() => setActiveTab('subs')} className={`px-6 py-2 text-xs font-mono uppercase tracking-widest transition-all ${activeTab === 'subs' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--text-muted)]'}`}>Monthly Subs</button>
+            <button onClick={() => setActiveTab('daypass')} className={`px-6 py-2 text-xs font-mono uppercase tracking-widest transition-all ${activeTab === 'daypass' ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--text-muted)]'}`}>Day Pass</button>
         </div>
       </div>
 
       {activeTab === 'subs' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto pb-12">
+            {/* BASIC: 27K */}
             <PlanCard 
-                planKey="basic" 
+                name="Flex Basic" 
+                price={27000} 
+                planCode="PLN_2ah21zqr7w3jpdp" 
                 days="8 Days Access" 
                 tier="Standard Spaces" 
-                features={["Community WiFi"]}
-                icon={Shield}
+                features={["Community WiFi"]} 
+                icon={Shield} 
             />
+            {/* PRO: 55K */}
             <PlanCard 
-                planKey="pro" 
+                name="Flex Pro" 
+                price={55000} 
+                planCode="PLN_qhytgtizn15iepe" 
                 days="16 Days Access" 
                 tier="Std + Premium" 
-                features={["Meeting Room Credits", "Priority Support"]}
-                icon={Zap}
-                recommended={true}
+                features={["Meeting Credits", "Priority Support"]} 
+                icon={Zap} 
+                recommended={true} 
             />
+            {/* UNLIMITED: 90K */}
             <PlanCard 
-                planKey="unlimited" 
+                name="Flex Unlimited" 
+                price={90000} 
+                planCode="PLN_31ksupido3h8d0b" 
                 days="Unlimited Access" 
                 tier="All Locations" 
-                features={["Guest Passes (2/mo)", "Dedicated Locker"]}
-                icon={Infinity}
+                features={["Guest Passes", "Locker"]} 
+                icon={Infinity} 
             />
         </div>
       )}
 
       {activeTab === 'daypass' && (
         <div className="max-w-md mx-auto pb-12">
-            <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-8 text-center relative overflow-hidden rounded-sm shadow-md">
-                <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-accent)] animate-pulse"></div>
-                <div className="w-16 h-16 bg-[var(--bg-input)] rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--color-accent)]"><QrCode className="w-8 h-8" /></div>
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-8 text-center relative rounded-sm shadow-md">
                 <h2 className="text-2xl font-bold text-[var(--text-main)] font-mono mb-2">Single Day Pass</h2>
                 <div className="mb-8 p-4 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-sm">
-                    <div className="text-3xl font-bold text-[var(--text-main)] font-mono">₦{dayPassPrice.toLocaleString()}</div>
-                    <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">FLAT RATE / DAY</div>
+                    <div className="text-3xl font-bold text-[var(--text-main)] font-mono">₦4,500</div>
                 </div>
-                
                 {user && (
-                    <div className="w-full py-4 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold uppercase hover:opacity-90 transition-all flex items-center justify-center cursor-pointer">
+                    <div className="w-full py-4 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold uppercase hover:opacity-90 cursor-pointer">
                         <PaystackButton 
                             className="w-full h-full block"
                             email={user.email}
-                            amount={dayPassPrice * 100}
+                            amount={4500 * 100}
                             publicKey={publicKey}
                             text="PURCHASE PASS"
                             onSuccess={handleSuccess}
@@ -176,10 +157,8 @@ export default function PlansPage() {
                     </div>
                 )}
             </div>
-            <p className="text-center text-[10px] text-[var(--text-muted)] font-mono mt-4">*Excludes The Bunker (Requires Top-up)</p>
         </div>
       )}
-
     </AppLayout>
   );
 }

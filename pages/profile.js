@@ -1,34 +1,30 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { User, CreditCard, Settings, LogOut, Mail, Phone, MapPin, Edit2, Save, X } from 'lucide-react';
+import { User, CreditCard, Settings, LogOut, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState({ 
-    username: 'Loading...', 
-    email: '...',
-    phone: '...',
-    location: '...',
-    plan: '...'
-  });
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({});
+  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
 
   useEffect(() => {
-     setTimeout(() => {
-         const initialData = { 
-             username: "Olawale Marcus", 
-             email: "olawale@workspace.africa",
-             phone: "+234 800 000 0000",
-             location: "Lagos, Nigeria",
-             plan: "FLEX_PRO"
-         };
-         setUser(initialData);
-         setEditForm(initialData);
-     }, 500);
+     const fetchProfile = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) { Router.push('/'); return; }
+            
+            const response = await axios.get(`${API_URL}/api/users/me/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(response.data);
+        } catch (err) {
+            console.error(err);
+        }
+     };
+     fetchProfile();
   }, []);
 
   const handleLogout = () => {
@@ -36,179 +32,40 @@ export default function ProfilePage() {
     Router.push('/');
   };
 
-  const handleEditToggle = () => {
-    if (!isEditing) setEditForm(user);
-    setIsEditing(!isEditing);
-  };
-
-  const handleSave = () => {
-    setUser(editForm);
-    setIsEditing(false);
-  };
-
-  const handleInputChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
-
-  const TabButton = ({ id, label, icon: Icon }) => (
-    <button 
-        onClick={() => setActiveTab(id)}
-        className={`flex-1 py-3 flex items-center justify-center space-x-2 text-[10px] font-mono uppercase tracking-widest border-b-2 transition-colors ${activeTab === id ? 'border-[var(--color-accent)] text-[var(--text-main)] bg-[var(--bg-input)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-    >
-        <Icon className="w-4 h-4" />
-        <span className="hidden sm:inline">{label}</span>
-    </button>
-  );
-
-  const InfoRow = ({ label, name, value, icon: Icon, isEditable }) => (
-    <div className="flex items-center justify-between py-4 border-b border-[var(--border-color)] last:border-0">
-        <div className="flex items-center text-[var(--text-muted)] min-w-[120px]">
-            {Icon && <Icon className="w-4 h-4 mr-3 opacity-70" />}
-            <span className="text-xs font-mono uppercase">{label}</span>
-        </div>
-        
-        {isEditable ? (
-             <input 
-                name={name}
-                value={editForm[name] || ''}
-                onChange={handleInputChange}
-                className="bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] px-3 py-1 text-sm font-mono text-right w-full max-w-[200px] focus:border-[var(--color-accent)] focus:outline-none"
-             />
-        ) : (
-             <span className="text-sm text-[var(--text-main)] font-mono text-right">{value}</span>
-        )}
-    </div>
-  );
+  if (!user) return <div className="p-8 text-center font-mono text-[var(--text-muted)]">LOADING_PROFILE...</div>;
 
   return (
     <AppLayout activePage="profile">
-      <Head><title>My Profile | Workspace OS</title></Head>
+      <Head><title>Profile | Workspace OS</title></Head>
 
-      {/* --- ID Header --- */}
       <div className="flex items-center space-x-4 mb-8 bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 relative overflow-hidden shadow-sm">
-         <div className="absolute top-0 right-0 w-20 h-full bg-gradient-to-l from-[var(--color-accent)]/10 to-transparent"></div>
-
-         <div className="w-16 h-16 bg-[var(--bg-input)] border border-[var(--border-color)] flex items-center justify-center text-2xl font-mono text-[var(--text-main)] rounded-full relative z-10">
-            {user.username[0]}
+         <div className="w-16 h-16 bg-[var(--bg-input)] border border-[var(--border-color)] flex items-center justify-center text-2xl font-mono text-[var(--text-main)] rounded-full">
+            {user.username?.[0]?.toUpperCase()}
          </div>
-         <div className="relative z-10">
+         <div>
             <h1 className="text-xl font-bold text-[var(--text-main)] font-mono uppercase">{user.username}</h1>
             <div className="flex items-center mt-1 space-x-2">
                 <span className="text-[9px] font-mono bg-[var(--color-accent)] text-white px-1.5 py-0.5">MEMBER</span>
-                <span className="text-[var(--text-muted)] font-mono text-xs">{user.plan}</span>
+                <span className="text-[var(--text-muted)] font-mono text-xs">{user.subscription?.plan?.name || 'NO_PLAN'}</span>
             </div>
          </div>
       </div>
 
-      {/* --- Tabs --- */}
-      <div className="flex mb-6 border-b border-[var(--border-color)]">
-        <TabButton id="details" label="My Details" icon={User} />
-        <TabButton id="membership" label="Membership" icon={CreditCard} />
-        <TabButton id="settings" label="Settings" icon={Settings} />
-      </div>
-
-      {/* --- Tab Content --- */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 min-h-[400px] shadow-sm">
-        
-        {activeTab === 'details' && (
-            <div className="animate-fade-in">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-[var(--text-main)] font-bold">Personal Information</h2>
-                    {isEditing && (
-                        <span className="text-[10px] font-mono text-[var(--color-accent)] animate-pulse">EDITING_MODE_ACTIVE</span>
-                    )}
-                </div>
-                
-                <div className="space-y-1">
-                    <InfoRow label="Full Name" name="username" value={user.username} icon={User} isEditable={isEditing} />
-                    <InfoRow label="Email Address" name="email" value={user.email} icon={Mail} isEditable={isEditing} />
-                    <InfoRow label="Phone Number" name="phone" value={user.phone} icon={Phone} isEditable={isEditing} />
-                    <InfoRow label="Home Base" name="location" value={user.location} icon={MapPin} isEditable={isEditing} />
-                </div>
-
-                <div className="mt-8 flex space-x-3">
-                    {!isEditing ? (
-                        <button 
-                            onClick={handleEditToggle}
-                            className="text-[10px] font-mono text-[var(--color-accent)] hover:text-[var(--text-main)] uppercase tracking-widest border border-[var(--color-accent)] px-4 py-2 hover:bg-[var(--color-accent)] transition-all flex items-center hover:text-white"
-                        >
-                            <Edit2 className="w-3 h-3 mr-2" /> EDIT_PROFILE
-                        </button>
-                    ) : (
-                        <>
-                            <button 
-                                onClick={handleSave}
-                                className="text-[10px] font-mono text-white bg-[var(--color-accent)] uppercase tracking-widest border border-[var(--color-accent)] px-4 py-2 hover:opacity-90 transition-all flex items-center"
-                            >
-                                <Save className="w-3 h-3 mr-2" /> SAVE_CHANGES
-                            </button>
-                            <button 
-                                onClick={handleEditToggle}
-                                className="text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)] uppercase tracking-widest border border-[var(--border-color)] px-4 py-2 hover:border-[var(--text-main)] transition-all flex items-center"
-                            >
-                                <X className="w-3 h-3 mr-2" /> CANCEL
-                            </button>
-                        </>
-                    )}
-                </div>
+         <h2 className="text-[var(--text-main)] font-bold mb-4">Personal Information</h2>
+         <div className="space-y-2">
+            <div className="flex justify-between py-3 border-b border-[var(--border-color)]">
+                <span className="text-xs font-mono text-[var(--text-muted)]">FULL NAME</span>
+                <span className="text-sm font-mono text-[var(--text-main)]">{user.username}</span>
             </div>
-        )}
-
-        {activeTab === 'membership' && (
-            <div className="text-center py-8 animate-fade-in">
-                <div className="inline-block p-4 border border-dashed border-[var(--border-color)] rounded-full mb-4">
-                    <CreditCard className="w-8 h-8 text-[var(--text-muted)]" />
-                </div>
-                <div className="text-[var(--text-muted)] font-mono text-xs uppercase mb-2">Active Plan</div>
-                <div className="text-3xl font-bold text-[var(--text-main)] font-mono mb-2">FLEX_PRO</div>
-                <div className="text-[var(--color-accent)] font-mono text-lg mb-8">₦45,000<span className="text-xs text-[var(--text-muted)]">/mo</span></div>
-                
-                <div className="max-w-xs mx-auto space-y-3 mb-8">
-                    <div className="flex justify-between text-xs font-mono text-[var(--text-muted)]">
-                        <span>RENEWAL DATE</span>
-                        <span className="text-[var(--text-main)]">DEC 20, 2025</span>
-                    </div>
-                    <div className="flex justify-between text-xs font-mono text-[var(--text-muted)]">
-                        <span>PAYMENT METHOD</span>
-                        <span className="text-[var(--text-main)]">VISA •••• 4242</span>
-                    </div>
-                </div>
-
-                <button className="w-full max-w-xs py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-colors uppercase">
-                    Manage Subscription
-                </button>
+            <div className="flex justify-between py-3 border-b border-[var(--border-color)]">
+                <span className="text-xs font-mono text-[var(--text-muted)]">EMAIL</span>
+                <span className="text-sm font-mono text-[var(--text-main)]">{user.email}</span>
             </div>
-        )}
-
-        {activeTab === 'settings' && (
-            <div className="space-y-6 animate-fade-in">
-                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-[var(--bg-input)] border border-[var(--border-color)]">
-                        <div>
-                            <div className="text-[var(--text-main)] text-sm font-bold">Notifications</div>
-                            <div className="text-[var(--text-muted)] text-xs">Receive email updates</div>
-                        </div>
-                        <div className="w-10 h-5 bg-[var(--color-accent)] rounded-full relative cursor-pointer">
-                            <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-[var(--bg-input)] border border-[var(--border-color)]">
-                        <div>
-                            <div className="text-[var(--text-main)] text-sm font-bold">Dark Mode</div>
-                            <div className="text-[var(--text-muted)] text-xs">Controlled by System</div>
-                        </div>
-                        <div className="text-xs font-mono text-[var(--text-muted)] uppercase">AUTO</div>
-                    </div>
-                 </div>
-
-                 <button onClick={handleLogout} className="w-full flex items-center justify-center p-4 border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors mt-8">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    <span className="font-mono text-xs uppercase font-bold">Log Out</span>
-                 </button>
-            </div>
-        )}
-
+         </div>
+         <button onClick={handleLogout} className="mt-8 flex items-center text-red-500 text-xs font-mono uppercase hover:underline">
+            <LogOut className="w-4 h-4 mr-2" /> LOG OUT
+         </button>
       </div>
     </AppLayout>
   );
