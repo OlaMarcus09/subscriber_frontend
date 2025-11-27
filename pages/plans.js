@@ -6,7 +6,7 @@ import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-// Dynamically load Paystack to avoid server-side build errors
+// Dynamically load Paystack
 const PaystackButton = dynamic(
   () => import('react-paystack').then((mod) => mod.PaystackButton),
   { ssr: false }
@@ -17,11 +17,20 @@ export default function PlansPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Configuration
+  // --- CONFIGURATION ---
   const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
 
-  // Fetch User Data on Mount
+  // --- UPDATED PLAN CODES ---
+  const plans = {
+    basic: { code: 'PLN_2ah21zqr7w3jpdp', price: 27000, name: 'Flex Basic' },
+    pro: { code: 'PLN_qhytgtizn15iepe', price: 55000, name: 'Flex Pro' },
+    unlimited: { code: 'PLN_31ksupido3h8d0b', price: 90000, name: 'Flex Unlimited' }
+  };
+
+  const dayPassPrice = 4500;
+
+  // Fetch User Data
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -36,8 +45,8 @@ export default function PlansPage() {
         setUser(response.data);
       } catch (err) {
         console.error("Failed to load user for payment:", err);
-        // Fallback for demo if API fails
-        setUser({ email: "demo@workspace.africa" }); 
+        // Fallback for demo/testing if API fails or no token
+        setUser({ email: "test@workspace.africa" }); 
       } finally {
         setLoading(false);
       }
@@ -45,20 +54,10 @@ export default function PlansPage() {
     fetchUser();
   }, []);
 
-  const plans = {
-    basic: { code: 'PLN_mu2w42h302kwhs4', price: 27000, name: 'Flex Basic' },
-    pro: { code: 'PLN_rlctlj6pkky8t94', price: 55000, name: 'Flex Pro' },
-    unlimited: { code: 'PLN_bn2p2x82io1fooy', price: 90000, name: 'Flex Unlimited' }
-  };
-
-  const dayPassPrice = 4500;
-
   const handleSuccess = async (reference) => {
     console.log(reference);
     alert("Payment Successful! Ref: " + reference.reference);
-    
-    // TODO: Send this reference to your backend to record the subscription
-    // await axios.post(`${API_URL}/api/subscriptions/verify/`, { ref: reference.reference });
+    // In production: Post reference to backend here
   };
 
   const handleClose = () => {
@@ -68,7 +67,6 @@ export default function PlansPage() {
   const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false }) => {
     const plan = plans[planKey];
     
-    // Wait for user data before rendering button props
     if (loading || !user) return <div className="p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] animate-pulse">Loading...</div>;
 
     const componentProps = {
@@ -76,7 +74,7 @@ export default function PlansPage() {
         amount: plan.price * 100, // Kobo
         publicKey,
         text: 'ACTIVATE PLAN',
-        plan: plan.code, // Recurring Plan ID
+        plan: plan.code, // Uses the new Plan ID
         onSuccess: handleSuccess,
         onClose: handleClose,
     };
