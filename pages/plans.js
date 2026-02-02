@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import Head from 'next/head';
 import axios from 'axios';
+import Router from 'next/router';
+import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Dynamically load Paystack
+const PaystackButton = dynamic(
+  () => import('react-paystack').then((mod) => mod.PaystackButton),
+  { ssr: false }
+);
 
 // --- CONFIGURATION ---
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
-
-// --- CRITICAL FIX: Updated Backend URL ---
-// 1. Prioritize Env Var
-// 2. Fallback to Vercel (NOT Render)
-// 3. Added check for 'process' to avoid ReferenceError
+// FIX: Point to Vercel Backend (Render is dead)
 const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
 const PLANS = {
@@ -17,25 +23,7 @@ const PLANS = {
     unlimited: { code: 'PLN_31ksupido3h8d0b', price: 90000, name: 'Flex Unlimited' }
 };
 
-// Simplified mock AppLayout since we can't resolve the external one
-const AppLayout = ({ children, activePage }) => (
-  <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] p-4">
-    <div className="max-w-5xl mx-auto">
-      {children}
-    </div>
-  </div>
-);
-
-// Simplified Paystack Button Mock since we can't resolve external lib
-const PaystackButton = (props) => (
-  <button 
-    onClick={() => props.onSuccess({ reference: 'mock-ref-123' })}
-    className={props.className}
-  >
-    {props.text}
-  </button>
-);
-
+// --- ISOLATED COMPONENT ---
 const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false, user }) => {
     const plan = PLANS[planKey];
     
@@ -87,6 +75,7 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
             </ul>
             
             <div className="w-full py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-all uppercase text-center cursor-pointer shadow-lg relative group">
+                 {/* Invisible Paystack button overlay for reliable clicking */}
                 <PaystackButton {...componentProps} className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-20" />
                 <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">SUBSCRIBE NOW</span>
             </div>
@@ -104,11 +93,7 @@ export default function PlansPage() {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-             console.warn("No token found. In a real app, this would redirect to login.");
-             // window.location.href = '/'; // Commented out to prevent crash in preview
-             
-             // Setting mock user for preview visualization
-             setUser({ email: 'demo@workspace.africa' });
+             Router.push('/');
              return;
         }
         const response = await axios.get(`${API_URL}/api/users/me/`, {
@@ -117,8 +102,6 @@ export default function PlansPage() {
         setUser(response.data);
       } catch (err) {
         console.error("Failed to load user:", err);
-        // Fallback to mock user if API fails (e.g. 401 or network error)
-        setUser({ email: 'demo@workspace.africa' });
       } finally {
         setLoading(false);
       }
@@ -132,8 +115,8 @@ export default function PlansPage() {
 
   return (
     <AppLayout activePage="plans">
-      {/* Removed Head/document.title logic to simplify */}
-      
+      <Head><title>Select Access | Workspace OS</title></Head>
+
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-[var(--text-main)] font-mono uppercase mb-2">Select Access Protocol</h1>
         <p className="text-[var(--text-muted)] font-mono text-xs">CHOOSE YOUR BANDWIDTH</p>
