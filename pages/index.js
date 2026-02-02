@@ -1,10 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Router from 'next/router';
-import Head from 'next/head';
-import Link from 'next/link';
-import { Terminal, ArrowRight, AlertCircle } from 'lucide-react';
-import ThemeToggle from '../components/ThemeToggle';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,8 +8,16 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Ensure this matches your Vercel env variable
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
+  // --- UPDATED CONFIGURATION ---
+  // 1. We prioritize the Vercel Environment Variable.
+  // 2. We updated the fallback to the NEW Vercel Backend (not Render).
+  // 3. We added a check for 'process' to avoid ReferenceError in client-side only environments.
+  const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
+
+  // Set page title using useEffect since we removed next/head
+  useEffect(() => {
+    document.title = "Nomad Access | Workspace OS";
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -33,7 +37,8 @@ export default function Login() {
       localStorage.setItem('refreshToken', refresh);
 
       // 3. Redirect to Dashboard
-      Router.push('/dashboard');
+      // Using window.location instead of router.push for compatibility
+      window.location.href = '/dashboard';
 
     } catch (err) {
       console.error("Login Error:", err);
@@ -49,14 +54,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-[var(--bg-main)] transition-colors duration-300 bg-grid-pattern">
-      <Head>
-        <title>Nomad Access | Workspace OS</title>
-      </Head>
-
-      {/* Theme Switcher */}
-      <div className="absolute top-6 right-6 z-50">
+      
+      {/* Theme Switcher Placeholder - Removed external dependency */}
+      {/* <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
-      </div>
+      </div> */}
 
       {/* Header Decoration */}
       <div className="absolute top-0 left-0 w-full p-4 border-b border-[var(--border-color)] flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
@@ -116,10 +118,10 @@ export default function Login() {
             </form>
 
             <div className="mt-6 pt-6 border-t border-[var(--border-color)] flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
-                <Link href="#" className="hover:text-[var(--text-main)]">FORGOT_KEY?</Link>
-                <Link href="/signup" legacyBehavior>
-                    <a className="hover:text-[var(--text-main)]">CREATE_NEW_ID {'->'}</a>
-                </Link>
+                <a href="#" className="hover:text-[var(--text-main)]">FORGOT_KEY?</a>
+                <a href="/signup" className="hover:text-[var(--text-main)]">
+                    CREATE_NEW_ID {'->'}
+                </a>
             </div>
         </div>
       </div>
