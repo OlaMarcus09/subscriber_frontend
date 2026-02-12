@@ -27,7 +27,6 @@ export default function SpacesPage() {
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState(null);
 
-  // Helper to get safe API base URL
   const getBaseUrl = () => process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
   useEffect(() => {
@@ -70,7 +69,6 @@ export default function SpacesPage() {
         
         if (!token) throw new Error("AUTH_REQUIRED: Please log in again.");
 
-        // Trailing slash added to URL for Django compatibility
         const response = await axios.post(
             `${getBaseUrl()}/api/spaces/generate-token/`, 
             { space_id: spaceId },
@@ -135,7 +133,12 @@ export default function SpacesPage() {
                 {bookingToken.meta && (
                   <div className="mt-6 pt-4 border-t border-dashed border-[var(--border-color)] flex justify-between text-[10px] font-mono">
                       <span>REMAINING:</span>
-                      <span className="text-[var(--color-accent)]">{bookingToken.meta.days_total - bookingToken.meta.days_used} DAYS</span>
+                      {/* --- LOGIC UPDATED --- */}
+                      <span className="text-[var(--color-accent)] uppercase">
+                        {bookingToken.meta.days_total >= 999 
+                          ? 'UNLIMITED ACCESS' 
+                          : `${bookingToken.meta.days_total - bookingToken.meta.days_used} DAYS`}
+                      </span>
                   </div>
                 )}
             </div>

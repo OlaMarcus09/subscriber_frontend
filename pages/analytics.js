@@ -10,34 +10,41 @@ export default function AnalyticsPage() {
      total_checkins: 0, 
      days_used: 0,
      days_total: 18,
-     health_pct: 0
+     health_pct: 0,
+     is_unlimited: false // Added flag
   });
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
+  
+  const getBaseUrl = () => process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
   useEffect(() => {
       const fetchData = async () => {
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
         if (!token) { Router.push('/'); return; }
 
         try {
-            const res = await axios.get(`${API_URL}/api/users/me/`, {
+            // Updated endpoint to use your profile route
+            const res = await axios.get(`${getBaseUrl()}/api/users/profile/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             const userData = res.data;
-            // Calculate usage based on subscription
-            const used = userData.days_used_this_month || 0;
-            const total = userData.subscription?.plan?.included_days || 18;
-            const pct = Math.min((used / total) * 100, 100);
+            const used = userData.days_used || 0;
+            const total = userData.total_days || 0;
+            
+            // Logic for Unlimited check
+            const isUnlimited = total >= 999;
+            // For unlimited, health is always 0% used (good), otherwise calculate %
+            const pct = isUnlimited ? 0 : Math.min((used / total) * 100, 100);
 
             setAnalytics({
                 total_checkins: userData.total_checkins || 0,
                 days_used: used,
                 days_total: total,
-                health_pct: pct
+                health_pct: pct,
+                is_unlimited: isUnlimited
             });
         } catch (err) {
-            console.error(err);
+            console.error("Analytics fetch failed:", err);
         }
       };
       fetchData();
@@ -46,8 +53,8 @@ export default function AnalyticsPage() {
   const DataCard = ({ label, value, sub }) => (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-5 shadow-sm">
         <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">{label}</div>
-        <div className="text-3xl font-mono font-bold text-[var(--text-main)] mb-1">{value}</div>
-        {sub && <div className="text-xs font-mono text-[var(--color-accent)]">{sub}</div>}
+        <div className="text-3xl font-mono font-bold text-[var(--text-main)] mb-1 uppercase">{value}</div>
+        {sub && <div className="text-xs font-mono text-[var(--color-accent)] uppercase">{sub}</div>}
     </div>
   );
 
@@ -62,7 +69,12 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         <DataCard label="Total Logins" value={analytics.total_checkins} sub="LIFETIME" />
-        <DataCard label="Bandwidth" value={`${analytics.days_used}/${analytics.days_total}`} sub="DAYS USED" />
+        {/* --- BANDWIDTH LOGIC UPDATED --- */}
+        <DataCard 
+            label="Bandwidth" 
+            value={analytics.is_unlimited ? "UNLIMITED" : `${analytics.days_used}/${analytics.days_total}`} 
+            sub="DAYS USED" 
+        />
       </div>
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 shadow-sm">
@@ -74,11 +86,10 @@ export default function AnalyticsPage() {
             <div className="h-full bg-[var(--color-accent)] transition-all duration-1000" style={{ width: `${analytics.health_pct}%` }}></div>
         </div>
         <div className="flex justify-between text-[10px] font-mono text-[var(--text-muted)]">
-            <span>{analytics.health_pct.toFixed(0)}% UTILIZED</span>
+            <span>{analytics.is_unlimited ? "OPTIMAL" : `${analytics.health_pct.toFixed(0)}% UTILIZED`}</span>
             <span>RESETS MONTHLY</span>
         </div>
       </div>
-
     </AppLayout>
   );
 }
