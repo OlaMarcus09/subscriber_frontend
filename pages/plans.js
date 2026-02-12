@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Head from 'next/head'; 
 import axios from 'axios';
 import Router from 'next/router';
 import AppLayout from '../components/AppLayout';
@@ -12,8 +13,7 @@ const PaystackButton = dynamic(
 );
 
 // --- CONFIGURATION ---
-// You requested TEST key. Ensure your Paystack Dashboard is in TEST mode 
-// and you have created these Plans in TEST mode if you want this to work.
+// Ensure you use the LIVE key if your plans are on Live Mode
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
 const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
@@ -46,7 +46,7 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
         axios.get(`${API_URL}/api/payments/verify/?reference=${reference.reference}`)
             .then(() => {
                 alert("Payment Successful! Subscription Activated.");
-                Router.push('/profile'); // Redirect to profile to see status
+                Router.push('/profile');
             })
             .catch(err => {
                 console.error("Verification failed", err);
