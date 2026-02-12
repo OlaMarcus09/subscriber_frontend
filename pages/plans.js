@@ -6,7 +6,7 @@ import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-// Dynamically load Paystack
+// Dynamically load Paystack (Real Library)
 const PaystackButton = dynamic(
   () => import('react-paystack').then((mod) => mod.PaystackButton),
   { ssr: false }
@@ -16,20 +16,20 @@ const PaystackButton = dynamic(
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
 const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
-// --- UPDATED PLAN CODES (FROM PAYSTACK DASHBOARD) ---
+// --- UPDATED LIVE PLAN CODES (Corrected) ---
 const PLANS = {
     basic: { 
-        code: 'PLN_mu2w42h302kwhs4', // Flex Basic (27k)
+        code: 'PLN_qhytgtizn15iepe', // Flex Basic (27k)
         price: 27000, 
         name: 'Flex Basic' 
     },
     pro: { 
-        code: 'PLN_rlctlj6pkky8t94', // Flex PRO (55k)
+        code: 'PLN_31ksupido3h8d0b', // Flex Pro (55k)
         price: 55000, 
         name: 'Flex Pro' 
     },
     unlimited: { 
-        code: 'PLN_bn2p2x82io1fooy', // Flex Unlimited (90k)
+        code: 'PLN_28x17xi3up6miwc', // Flex Unlimited (90k)
         price: 90000, 
         name: 'Flex Unlimited' 
     }
