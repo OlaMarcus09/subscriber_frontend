@@ -33,13 +33,24 @@ export default function SpacesPage() {
     const fetchSpaces = async () => {
         try {
             const response = await axios.get(`${getBaseUrl()}/api/spaces/`);
-            setSpaces(response.data);
-            setFilteredSpaces(response.data);
+            // Only set if we actually have data, otherwise fallback
+            if (response.data && response.data.length > 0) {
+                setSpaces(response.data);
+                setFilteredSpaces(response.data);
+            } else {
+                throw new Error("EMPTY_DATA");
+            }
         } catch (err) {
-            console.error("Using fallback data...");
+            console.warn("API unavailable or empty. Loading core network nodes...");
+            // Comprehensive fallback with all 7 nodes to prevent empty UI
             const fallback = [
                 { id: 1, name: "Seb's Hub", address: "32 Awolowo Ave, Bodija", access_tier: "PREMIUM", amenities: ["AC", "WiFi"] },
+                { id: 2, name: "Worknub", address: "West One, Agodi GRA", access_tier: "PREMIUM", amenities: ["AC", "WiFi"] },
                 { id: 3, name: "Stargate Workstation", address: "Cocoa House, Dugbe", access_tier: "STANDARD", amenities: ["WiFi"] },
+                { id: 4, name: "The Bunker", address: "Ring Road, Ibadan", access_tier: "PREMIUM", amenities: ["AC", "WiFi"] },
+                { id: 5, name: "Nesta Co-work", address: "Bashorun Estate, Akobo", access_tier: "STANDARD", amenities: ["WiFi"] },
+                { id: 6, name: "Cyberhaven", address: "Okunmade St, Mokola", access_tier: "STANDARD", amenities: ["WiFi"] },
+                { id: 7, name: "Atelier Café", address: "Jericho, Ibadan", access_tier: "PREMIUM", amenities: ["Coffee", "WiFi"] },
             ];
             setSpaces(fallback);
             setFilteredSpaces(fallback);
@@ -66,7 +77,6 @@ export default function SpacesPage() {
     setError(null);
     try {
         const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
-        
         if (!token) throw new Error("AUTH_REQUIRED: Please log in again.");
 
         const response = await axios.post(
@@ -90,7 +100,7 @@ export default function SpacesPage() {
   };
 
   const SpaceCard = ({ space }) => (
-    <div className="group bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 rounded-sm shadow-sm relative overflow-hidden">
+    <div className="group bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 rounded-sm shadow-sm relative overflow-hidden mb-4">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="text-[var(--text-main)] font-mono font-bold text-lg">{space.name}</h3>
@@ -133,7 +143,6 @@ export default function SpacesPage() {
                 {bookingToken.meta && (
                   <div className="mt-6 pt-4 border-t border-dashed border-[var(--border-color)] flex justify-between text-[10px] font-mono">
                       <span>REMAINING:</span>
-                      {/* --- LOGIC UPDATED --- */}
                       <span className="text-[var(--color-accent)] uppercase">
                         {bookingToken.meta.days_total >= 999 
                           ? 'UNLIMITED ACCESS' 
@@ -153,13 +162,25 @@ export default function SpacesPage() {
         <h1 className="text-2xl font-bold font-mono tracking-tight">SECTOR MAP</h1>
         <div className="flex space-x-1 p-1 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-sm">
             {['all', 'premium', 'standard'].map(f => (
-                <button key={f} onClick={() => setActiveFilter(f)} className={`flex-1 py-1.5 text-[10px] font-mono uppercase ${activeFilter === f ? 'bg-[var(--color-accent)] text-white' : 'text-[var(--text-muted)]'}`}>{f}</button>
+                <button 
+                  key={f} 
+                  onClick={() => setActiveFilter(f)} 
+                  className={`flex-1 py-1.5 text-[10px] font-mono uppercase ${activeFilter === f ? 'bg-[var(--color-accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                >
+                  {f}
+                </button>
             ))}
         </div>
       </div>
 
       <div className="space-y-4">
-        {loading ? <div className="text-center py-12 animate-pulse">&gt; LOADING TOPOLOGY...</div> : filteredSpaces.map(s => <SpaceCard key={s.id} space={s} />)}
+        {loading ? (
+          <div className="text-center py-12 animate-pulse font-mono text-xs">&gt; LOADING TOPOLOGY...</div>
+        ) : filteredSpaces.length > 0 ? (
+          filteredSpaces.map(s => <SpaceCard key={s.id} space={s} />)
+        ) : (
+          <div className="text-center py-12 font-mono text-xs text-[var(--text-muted)]">&gt; NO NODES FOUND IN SECTOR.</div>
+        )}
       </div>
     </AppLayout>
   );

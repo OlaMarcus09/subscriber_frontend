@@ -9,11 +9,11 @@ export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState({
      total_checkins: 0, 
      days_used: 0,
-     days_total: 18,
+     days_total: 0,
      health_pct: 0,
-     is_unlimited: false // Added flag
+     is_unlimited: false
   });
-  
+
   const getBaseUrl = () => process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
 
   useEffect(() => {
@@ -22,18 +22,17 @@ export default function AnalyticsPage() {
         if (!token) { Router.push('/'); return; }
 
         try {
-            // Updated endpoint to use your profile route
-            const res = await axios.get(`${getBaseUrl()}/api/users/profile/`, {
+            // Updated to fetch from the detailed profile endpoint
+            const res = await axios.get(`${getBaseUrl()}/api/users/me/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             const userData = res.data;
             const used = userData.days_used || 0;
             const total = userData.total_days || 0;
-            
-            // Logic for Unlimited check
             const isUnlimited = total >= 999;
-            // For unlimited, health is always 0% used (good), otherwise calculate %
+            
+            // Calculate health: 0% utilized is "healthy" for unlimited, otherwise calculate pct
             const pct = isUnlimited ? 0 : Math.min((used / total) * 100, 100);
 
             setAnalytics({
@@ -44,7 +43,7 @@ export default function AnalyticsPage() {
                 is_unlimited: isUnlimited
             });
         } catch (err) {
-            console.error("Analytics fetch failed:", err);
+            console.error("Analytics sync error:", err);
         }
       };
       fetchData();
@@ -69,7 +68,6 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         <DataCard label="Total Logins" value={analytics.total_checkins} sub="LIFETIME" />
-        {/* --- BANDWIDTH LOGIC UPDATED --- */}
         <DataCard 
             label="Bandwidth" 
             value={analytics.is_unlimited ? "UNLIMITED" : `${analytics.days_used}/${analytics.days_total}`} 
