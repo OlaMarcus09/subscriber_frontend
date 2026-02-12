@@ -1,35 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
 import axios from 'axios';
 import Router from 'next/router';
 import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-// Dynamically load Paystack (Real Library)
+// Dynamically load Paystack
 const PaystackButton = dynamic(
   () => import('react-paystack').then((mod) => mod.PaystackButton),
   { ssr: false }
 );
 
 // --- CONFIGURATION ---
+// You requested TEST key. Ensure your Paystack Dashboard is in TEST mode 
+// and you have created these Plans in TEST mode if you want this to work.
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
 const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
-// --- UPDATED LIVE PLAN CODES (Corrected) ---
+// --- PLAN CODES (Must match Backend Database) ---
 const PLANS = {
     basic: { 
-        code: 'PLN_qhytgtizn15iepe', // Flex Basic (27k)
+        code: 'PLN_qhytgtizn15iepe', // Flex Basic
         price: 27000, 
         name: 'Flex Basic' 
     },
     pro: { 
-        code: 'PLN_31ksupido3h8d0b', // Flex Pro (55k)
+        code: 'PLN_31ksupido3h8d0b', // Flex Pro
         price: 55000, 
         name: 'Flex Pro' 
     },
     unlimited: { 
-        code: 'PLN_28x17xi3up6miwc', // Flex Unlimited (90k)
+        code: 'PLN_28x17xi3up6miwc', // Flex Unlimited
         price: 90000, 
         name: 'Flex Unlimited' 
     }
@@ -37,17 +38,20 @@ const PLANS = {
 
 const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false, user }) => {
     const plan = PLANS[planKey];
+    const [activating, setActivating] = useState(false);
     
     const handleSuccess = (reference) => {
+        setActivating(true);
         // Verify payment with backend
         axios.get(`${API_URL}/api/payments/verify/?reference=${reference.reference}`)
             .then(() => {
                 alert("Payment Successful! Subscription Activated.");
-                Router.push('/dashboard');
+                Router.push('/profile'); // Redirect to profile to see status
             })
             .catch(err => {
                 console.error("Verification failed", err);
                 alert("Payment successful at Paystack, but activation failed. Contact support with ref: " + reference.reference);
+                setActivating(false);
             });
     };
 
@@ -59,7 +63,7 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
         email: user.email,
         amount: plan.price * 100, // Paystack takes kobo
         publicKey,
-        text: 'ACTIVATE PLAN',
+        text: activating ? 'ACTIVATING...' : 'ACTIVATE PLAN',
         plan: plan.code,
         onSuccess: handleSuccess,
         onClose: handleClose,
@@ -87,11 +91,13 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
                 ))}
             </ul>
             
-            <div className="w-full py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-all uppercase text-center cursor-pointer shadow-lg relative group">
+            <div className="w-full py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-all uppercase text-center cursor-pointer shadow-lg relative group border border-[var(--text-main)]">
                  {user ? (
                     <>
                         <PaystackButton {...componentProps} className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-20" />
-                        <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">SUBSCRIBE NOW</span>
+                        <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">
+                            {activating ? 'FINALIZING...' : 'SUBSCRIBE NOW'}
+                        </span>
                     </>
                  ) : (
                     <span className="flex items-center justify-center gap-2">
