@@ -23,25 +23,31 @@ export default function SpacesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   
-  // NEW: States for booking
   const [bookingToken, setBookingToken] = useState(null);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Note: In production, you'll fetch this from your API /api/spaces/
-    const realSpaces = [
-        { id: 1, name: "Seb's Hub", address: "32 Awolowo Ave, Bodija", access_tier: "PREMIUM", amenities: ["AC", "Kitchen", "WiFi"] },
-        { id: 2, name: "Worknub", address: "West One, Agodi GRA", access_tier: "PREMIUM", amenities: ["AC", "Conf"] },
-        { id: 3, name: "Stargate Workstation", address: "Cocoa House, Dugbe", access_tier: "STANDARD", amenities: ["AC", "WiFi"] },
-        { id: 4, name: "The Bunker", address: "Ring Road, Ibadan", access_tier: "PREMIUM", amenities: ["AC", "Cafe", "WiFi"] },
-        { id: 5, name: "Nesta Co-work", address: "Bashorun Estate, Akobo", access_tier: "STANDARD", amenities: ["WiFi", "Power"] },
-        { id: 6, name: "Cyberhaven", address: "Okunmade St, Mokola", access_tier: "STANDARD", amenities: ["WiFi"] },
-        { id: 7, name: "Atelier Café", address: "Jericho, Ibadan", access_tier: "PREMIUM", amenities: ["Coffee", "WiFi", "AC"] },
-    ];
-    setSpaces(realSpaces);
-    setFilteredSpaces(realSpaces);
-    setLoading(false);
+    // Fetching spaces from your backend
+    const fetchSpaces = async () => {
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/spaces/`);
+            setSpaces(response.data);
+            setFilteredSpaces(response.data);
+        } catch (err) {
+            console.error("Failed to load spaces:", err);
+            // Fallback to static if API fails during setup
+            const fallback = [
+                { id: 1, name: "Seb's Hub", address: "32 Awolowo Ave, Bodija", access_tier: "PREMIUM", amenities: ["AC", "Kitchen", "WiFi"] },
+                { id: 3, name: "Stargate Workstation", address: "Cocoa House, Dugbe", access_tier: "STANDARD", amenities: ["AC", "WiFi"] },
+            ];
+            setSpaces(fallback);
+            setFilteredSpaces(fallback);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchSpaces();
   }, []);
 
   useEffect(() => {
@@ -58,20 +64,34 @@ export default function SpacesPage() {
     setFilteredSpaces(results);
   }, [searchTerm, activeFilter, spaces]);
 
-  // NEW: Function to handle booking
   const handleInitiateBooking = async (spaceId) => {
     setIsBooking(true);
     setError(null);
     try {
+        // Use fresh token from localStorage
         const token = localStorage.getItem('access_token');
+        
+        if (!token) {
+            throw new Error("UNAUTHORIZED: Please log in again.");
+        }
+
         const response = await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL}/api/spaces/generate-token/`, 
             { space_id: spaceId },
-            { headers: { Authorization: `Bearer ${token}` } }
+            { 
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                } 
+            }
         );
         setBookingToken(response.data);
     } catch (err) {
-        setError(err.response?.data?.error || "ACCESS_DENIED: Subscription check failed.");
+        // If backend returns "No active subscription", we catch it here
+        const backendError = err.response?.data?.error || err.message;
+        setError(`ACCESS_DENIED: ${backendError}`);
+        
+        // Auto-clear error after 5 seconds
         setTimeout(() => setError(null), 5000);
     } finally {
         setIsBooking(false);
@@ -131,7 +151,6 @@ export default function SpacesPage() {
         <title>Grid Access | Workspace OS</title>
       </Head>
 
-      {/* NEW: Booking Token Modal */}
       {bookingToken && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[var(--bg-surface)] border-2 border-[var(--color-accent)] p-8 w-full max-w-sm relative text-center">
@@ -146,17 +165,18 @@ export default function SpacesPage() {
                     SHOW THIS CODE TO THE NODE OPERATOR FOR VALIDATION. 
                     EXPIRES IN 5 MINUTES.
                 </p>
-                <div className="mt-6 pt-4 border-t border-dashed border-[var(--border-color)] flex justify-between text-[10px] font-mono">
-                    <span className="text-[var(--text-muted)]">REMAINING_DAYS:</span>
-                    <span className="text-[var(--color-accent)]">{bookingToken.meta.days_total - bookingToken.meta.days_used}</span>
-                </div>
+                {bookingToken.meta && (
+                    <div className="mt-6 pt-4 border-t border-dashed border-[var(--border-color)] flex justify-between text-[10px] font-mono">
+                        <span className="text-[var(--text-muted)]">REMAINING_DAYS:</span>
+                        <span className="text-[var(--color-accent)]">{bookingToken.meta.days_total - bookingToken.meta.days_used}</span>
+                    </div>
+                )}
             </div>
         </div>
       )}
 
-      {/* NEW: Error Toast */}
       {error && (
-        <div className="fixed bottom-20 left-4 right-4 bg-red-900/90 text-white p-3 font-mono text-[10px] border border-red-500 z-40 animate-bounce">
+        <div className="fixed bottom-20 left-4 right-4 bg-red-900/90 text-white p-3 font-mono text-[10px] border border-red-500 z-40">
             &gt; ERROR: {error}
         </div>
       )}
@@ -172,7 +192,6 @@ export default function SpacesPage() {
           <Cpu className="w-6 h-6 text-[var(--text-muted)]" />
         </div>
 
-        {/* ... Search and Filters ... */}
         <div className="flex space-x-2">
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
