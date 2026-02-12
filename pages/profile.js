@@ -3,7 +3,7 @@ import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { User, CreditCard, Settings, LogOut, Mail, Phone, MapPin, Edit2, Save, X } from 'lucide-react';
+import { User, CreditCard, Settings, LogOut, Mail, Phone, MapPin, Edit2, Save, X, ExternalLink } from 'lucide-react';
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
@@ -11,7 +11,7 @@ export default function ProfilePage() {
   const [editForm, setEditForm] = useState({});
   const [activeTab, setActiveTab] = useState('details');
   
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
+  const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
   // Helper to fetch user
   const fetchProfile = async () => {
@@ -30,6 +30,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     localStorage.clear();
+    // Redirect to the Login Page or Gateway
     Router.push('/');
   };
 
@@ -53,14 +54,14 @@ export default function ProfilePage() {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-  // ... TabButton component remains same ...
+  // Tab Button Component
   const TabButton = ({ id, label, icon: Icon }) => (
     <button onClick={() => setActiveTab(id)} className={`flex-1 py-3 flex items-center justify-center space-x-2 text-[10px] font-mono uppercase tracking-widest border-b-2 transition-colors ${activeTab === id ? 'border-[var(--color-accent)] text-[var(--text-main)] bg-[var(--bg-input)]' : 'border-transparent text-[var(--text-muted)]'}`}>
         <Icon className="w-4 h-4" /> <span className="hidden sm:inline">{label}</span>
     </button>
   );
 
-  // ... InfoRow component ...
+  // Info Row Component
   const InfoRow = ({ label, name, value, icon: Icon, isEditable }) => (
     <div className="flex items-center justify-between py-4 border-b border-[var(--border-color)] last:border-0">
         <div className="flex items-center text-[var(--text-muted)] min-w-[120px]">
@@ -105,6 +106,7 @@ export default function ProfilePage() {
       {/* Content */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 min-h-[400px] shadow-sm">
         
+        {/* DETAILS TAB */}
         {activeTab === 'details' && (
             <div className="animate-fade-in">
                 <div className="flex justify-between items-center mb-4">
@@ -135,7 +137,7 @@ export default function ProfilePage() {
             </div>
         )}
 
-        {/* Membership Tab - Clean Read-Only View */}
+        {/* MEMBERSHIP TAB */}
         {activeTab === 'membership' && (
             <div className="text-center py-8 animate-fade-in">
                 <div className="text-[var(--text-muted)] font-mono text-xs uppercase mb-2">Current Status</div>
@@ -143,6 +145,31 @@ export default function ProfilePage() {
                 <button onClick={() => Router.push('/plans')} className="mt-6 w-full max-w-xs py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-colors uppercase">
                     UPGRADE / RENEW
                 </button>
+            </div>
+        )}
+
+        {/* SETTINGS TAB (ADDED) */}
+        {activeTab === 'settings' && (
+            <div className="animate-fade-in space-y-6">
+                
+                {/* System Links */}
+                <div>
+                    <h3 className="text-xs font-mono text-[var(--text-muted)] uppercase mb-3">System</h3>
+                    <div className="space-y-2">
+                        <a href="https://workspace-africa-gateway.vercel.app" className="flex items-center justify-between p-3 border border-[var(--border-color)] hover:border-[var(--color-accent)] transition-colors group">
+                            <span className="text-sm font-mono">Return to Gateway</span>
+                            <ExternalLink className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--color-accent)]" />
+                        </a>
+                    </div>
+                </div>
+
+                {/* Account Actions */}
+                <div>
+                    <h3 className="text-xs font-mono text-[var(--text-muted)] uppercase mb-3">Account</h3>
+                    <button onClick={handleLogout} className="w-full flex items-center justify-center p-3 border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white transition-all uppercase text-xs font-bold font-mono tracking-widest">
+                        <LogOut className="w-4 h-4 mr-2" /> Log Out
+                    </button>
+                </div>
             </div>
         )}
 
