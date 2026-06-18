@@ -11,9 +11,10 @@ export default function ProfilePage() {
   const [editForm, setEditForm] = useState({});
   const [activeTab, setActiveTab] = useState('details');
   
-  const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
+  // FIXED: Sanitized API URL to prevent double-slash redirects
+  const rawApiUrl = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
+  const API_URL = rawApiUrl.replace(/\/$/, '');
 
-  // Helper to fetch user
   const fetchProfile = async () => {
     try {
         const token = localStorage.getItem('accessToken');
@@ -23,25 +24,29 @@ export default function ProfilePage() {
         });
         setUser(response.data);
         setEditForm(response.data);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+        console.error("Profile Fetch Error:", err); 
+        if (err.response?.status === 401) {
+            localStorage.clear();
+            Router.push('/');
+        }
+    }
   };
 
   useEffect(() => { fetchProfile(); }, []);
 
   const handleLogout = () => {
     localStorage.clear();
-    // Redirect to the Login Page or Gateway
     Router.push('/');
   };
 
   const handleSave = async () => {
     try {
         const token = localStorage.getItem('accessToken');
-        // Send PATCH request to update user
         await axios.patch(`${API_URL}/api/users/me/`, editForm, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        setUser(editForm); // Update local UI
+        setUser(editForm); 
         setIsEditing(false);
         alert("Profile Updated!");
     } catch (err) {
@@ -54,14 +59,12 @@ export default function ProfilePage() {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-  // Tab Button Component
   const TabButton = ({ id, label, icon: Icon }) => (
     <button onClick={() => setActiveTab(id)} className={`flex-1 py-3 flex items-center justify-center space-x-2 text-[10px] font-mono uppercase tracking-widest border-b-2 transition-colors ${activeTab === id ? 'border-[var(--color-accent)] text-[var(--text-main)] bg-[var(--bg-input)]' : 'border-transparent text-[var(--text-muted)]'}`}>
         <Icon className="w-4 h-4" /> <span className="hidden sm:inline">{label}</span>
     </button>
   );
 
-  // Info Row Component
   const InfoRow = ({ label, name, value, icon: Icon, isEditable }) => (
     <div className="flex items-center justify-between py-4 border-b border-[var(--border-color)] last:border-0">
         <div className="flex items-center text-[var(--text-muted)] min-w-[120px]">
@@ -76,13 +79,12 @@ export default function ProfilePage() {
     </div>
   );
 
-  if (!user) return <div className="p-8 text-center font-mono text-[var(--text-muted)]">LOADING_PROFILE...</div>;
+  if (!user) return <div className="p-8 text-center font-mono text-[var(--text-muted)] mt-20 animate-pulse">LOADING_PROFILE...</div>;
 
   return (
     <AppLayout activePage="profile">
       <Head><title>Profile | Workspace OS</title></Head>
 
-      {/* Header */}
       <div className="flex items-center space-x-4 mb-8 bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 relative overflow-hidden shadow-sm">
          <div className="w-16 h-16 bg-[var(--bg-input)] border border-[var(--border-color)] flex items-center justify-center text-2xl font-mono text-[var(--text-main)] rounded-full">
             {user.username?.[0]?.toUpperCase()}
@@ -91,22 +93,19 @@ export default function ProfilePage() {
             <h1 className="text-xl font-bold text-[var(--text-main)] font-mono uppercase">{user.username}</h1>
             <div className="flex items-center mt-1 space-x-2">
                 <span className="text-[9px] font-mono bg-[var(--color-accent)] text-white px-1.5 py-0.5">PLAN</span>
-                <span className="text-[var(--text-muted)] font-mono text-xs">{user.subscription?.plan?.name || 'FREE_TIER'}</span>
+                <span className="text-[var(--text-muted)] font-mono text-xs uppercase">{user.subscription?.plan?.name || user.plan_name || 'FREE_TIER'}</span>
             </div>
          </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex mb-6 border-b border-[var(--border-color)]">
         <TabButton id="details" label="My Details" icon={User} />
         <TabButton id="membership" label="Membership" icon={CreditCard} />
         <TabButton id="settings" label="Settings" icon={Settings} />
       </div>
 
-      {/* Content */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-6 min-h-[400px] shadow-sm">
         
-        {/* DETAILS TAB */}
         {activeTab === 'details' && (
             <div className="animate-fade-in">
                 <div className="flex justify-between items-center mb-4">
@@ -137,22 +136,18 @@ export default function ProfilePage() {
             </div>
         )}
 
-        {/* MEMBERSHIP TAB */}
         {activeTab === 'membership' && (
             <div className="text-center py-8 animate-fade-in">
                 <div className="text-[var(--text-muted)] font-mono text-xs uppercase mb-2">Current Status</div>
-                <div className="text-3xl font-bold text-[var(--text-main)] font-mono mb-2">{user.subscription?.plan?.name || 'NO ACTIVE PLAN'}</div>
-                <button onClick={() => Router.push('/plans')} className="mt-6 w-full max-w-xs py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-colors uppercase">
+                <div className="text-3xl font-bold text-[var(--text-main)] font-mono mb-2 uppercase">{user.subscription?.plan?.name || user.plan_name || 'NO ACTIVE PLAN'}</div>
+                <button onClick={() => Router.push('/billing')} className="mt-6 w-full max-w-xs py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-colors uppercase">
                     UPGRADE / RENEW
                 </button>
             </div>
         )}
 
-        {/* SETTINGS TAB (ADDED) */}
         {activeTab === 'settings' && (
             <div className="animate-fade-in space-y-6">
-                
-                {/* System Links */}
                 <div>
                     <h3 className="text-xs font-mono text-[var(--text-muted)] uppercase mb-3">System</h3>
                     <div className="space-y-2">
@@ -163,7 +158,6 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Account Actions */}
                 <div>
                     <h3 className="text-xs font-mono text-[var(--text-muted)] uppercase mb-3">Account</h3>
                     <button onClick={handleLogout} className="w-full flex items-center justify-center p-3 border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white transition-all uppercase text-xs font-bold font-mono tracking-widest">
@@ -172,7 +166,6 @@ export default function ProfilePage() {
                 </div>
             </div>
         )}
-
       </div>
     </AppLayout>
   );
