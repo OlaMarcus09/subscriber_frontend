@@ -14,28 +14,19 @@ const PaystackButton = dynamic(
 
 // --- CONFIGURATION ---
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
-const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
-// --- PLAN CODES (Must match Backend Database) ---
+// Safely extract and sanitize the API URL to prevent double-slash redirects
+const rawApiUrl = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
+const API_URL = rawApiUrl.replace(/\/$/, ''); 
+
+// --- PLAN CODES ---
 const PLANS = {
-    basic: { 
-        code: 'PLN_qhytgtizn15iepe', 
-        price: 27000, 
-        name: 'Flex Basic' 
-    },
-    pro: { 
-        code: 'PLN_31ksupido3h8d0b', 
-        price: 55000, 
-        name: 'Flex Pro' 
-    },
-    unlimited: { 
-        code: 'PLN_28x17xi3up6miwc', 
-        price: 90000, 
-        name: 'Flex Unlimited' 
-    }
+    basic: { code: 'PLN_qhytgtizn15iepe', price: 27000, name: 'Flex Basic' },
+    pro: { code: 'PLN_31ksupido3h8d0b', price: 55000, name: 'Flex Pro' },
+    unlimited: { code: 'PLN_28x17xi3up6miwc', price: 90000, name: 'Flex Unlimited' }
 };
 
-const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false, user, loading }) => {
+const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false, user, loading, authError }) => {
     const plan = PLANS[planKey];
     const [activating, setActivating] = useState(false);
     
@@ -57,18 +48,14 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
         });
     };
 
-    const handleClose = () => {
-        console.log('Payment closed');
-    };
-
     const componentProps = user ? {
         email: user.email,
-        amount: plan.price * 100, // Paystack takes kobo
+        amount: plan.price * 100, 
         publicKey,
         text: activating ? 'ACTIVATING...' : 'ACTIVATE PLAN',
         plan: plan.code,
         onSuccess: handleSuccess,
-        onClose: handleClose,
+        onClose: () => console.log('Payment closed'),
     } : null;
 
     return (
@@ -106,7 +93,7 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
                         </span>
                     </>
                  ) : (
-                    <span className="text-red-500">AUTH FAILED</span>
+                    <span className="text-red-500 truncate px-2">{authError || 'AUTH_ERR'}</span>
                  )}
             </div>
         </div>
@@ -117,22 +104,27 @@ export default function PlansPage() {
   const [activeTab, setActiveTab] = useState('subs');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-             Router.push('/');
+             setAuthError("NO_TOKEN");
+             setLoading(false);
              return;
         }
-        // FIXED: Restored your explicit explicit token passing logic
+        
         const response = await axios.get(`${API_URL}/api/users/me/`, {
              headers: { Authorization: `Bearer ${token}` }
         });
+        
         setUser(response.data);
       } catch (err) {
         console.error("Failed to load user:", err);
+        setAuthError(err.response?.status === 401 ? "401_EXPIRED" : err.message || "NET_ERROR");
+        
         if (err.response?.status === 401) {
             localStorage.removeItem('accessToken');
             Router.push('/');
@@ -166,32 +158,16 @@ export default function PlansPage() {
       {activeTab === 'subs' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto pb-12 items-center">
             <PlanCard 
-                planKey="basic" 
-                days="8 Days Access" 
-                tier="Standard Spaces" 
-                features={["Community WiFi"]}
-                icon={Shield}
-                user={user}
-                loading={loading}
+                planKey="basic" days="8 Days Access" tier="Standard Spaces" 
+                features={["Community WiFi"]} icon={Shield} user={user} loading={loading} authError={authError}
             />
             <PlanCard 
-                planKey="pro" 
-                days="16 Days Access" 
-                tier="Std + Premium" 
-                features={["Meeting Room Credits", "Priority Support"]}
-                icon={Zap}
-                recommended={true}
-                user={user}
-                loading={loading}
+                planKey="pro" days="16 Days Access" tier="Std + Premium" 
+                features={["Meeting Room Credits", "Priority Support"]} icon={Zap} recommended={true} user={user} loading={loading} authError={authError}
             />
             <PlanCard 
-                planKey="unlimited" 
-                days="Unlimited Access" 
-                tier="All Locations" 
-                features={["Guest Passes (2/mo)", "Dedicated Locker"]}
-                icon={Infinity}
-                user={user}
-                loading={loading}
+                planKey="unlimited" days="Unlimited Access" tier="All Locations" 
+                features={["Guest Passes (2/mo)", "Dedicated Locker"]} icon={Infinity} user={user} loading={loading} authError={authError}
             />
         </div>
       )}
@@ -214,24 +190,18 @@ export default function PlansPage() {
                         <>
                             <PaystackButton 
                                 className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-20"
-                                email={user.email}
-                                amount={dayPassPrice * 100}
-                                publicKey={publicKey}
-                                text="PURCHASE PASS"
-                                onSuccess={handleDayPassSuccess}
-                                onClose={() => console.log('closed')}
+                                email={user.email} amount={dayPassPrice * 100} publicKey={publicKey}
+                                text="PURCHASE PASS" onSuccess={handleDayPassSuccess} onClose={() => console.log('closed')}
                             />
                             <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">PURCHASE PASS</span>
                         </>
                     ) : (
-                        <span className="text-red-500">AUTH FAILED</span>
+                        <span className="text-red-500 px-2">{authError || 'AUTH_ERR'}</span>
                     )}
                 </div>
             </div>
-            <p className="text-center text-[10px] text-[var(--text-muted)] font-mono mt-4">*Excludes The Bunker (Requires Top-up)</p>
         </div>
       )}
-
     </AppLayout>
   );
 }
