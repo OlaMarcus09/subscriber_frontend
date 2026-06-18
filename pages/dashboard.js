@@ -3,14 +3,16 @@ import axios from 'axios';
 import Router from 'next/router';
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { MapPin, Wifi, Coffee, QrCode, Calendar, Search, Sparkles, ArrowRight, Building2, BarChart3, Terminal } from 'lucide-react';
+import { MapPin, Wifi, Coffee, QrCode, Calendar, Sparkles, ArrowRight, Building2, BarChart3, Terminal } from 'lucide-react';
 
 export default function AppHome() {
   const [spaces, setSpaces] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
+  // FIXED: Sanitized API URL
+  const rawApiUrl = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
+  const API_URL = rawApiUrl.replace(/\/$/, '');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +37,10 @@ export default function AppHome() {
         
       } catch (err) {
         console.error("Dashboard Load Error:", err);
-        // No fallback mock data. Real data or empty.
+        if (err.response?.status === 401) {
+            localStorage.clear();
+            Router.push('/');
+        }
       } finally {
         setLoading(false);
       }
