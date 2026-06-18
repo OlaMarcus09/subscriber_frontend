@@ -1,28 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api'; // FIXED: Using global api client with interceptor
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { QrCode, RefreshCw, ShieldCheck } from 'lucide-react';
+import { QrCode, RefreshCw } from 'lucide-react';
 
 export default function CheckInPage() {
-  const [qrCode, setQrCode] = useState('LOADING...');
+  const [code, setCode] = useState('LOADING...');
+  const [meta, setMeta] = useState(null);
   const [user, setUser] = useState(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://workspace-africa-backend.onrender.com';
+  const [loading, setLoading] = useState(false);
 
-  const fetchToken = async () => {
+  const fetchActiveToken = async () => {
+    setLoading(true);
     try {
-        const token = localStorage.getItem('accessToken');
-        const res = await axios.get(`${API_URL}/api/users/me/`, { headers: { Authorization: `Bearer ${token}` } });
-        setUser(res.data);
+        // 1. Fetch user data
+        const userRes = await api.get('/api/users/me/');
+        setUser(userRes.data);
         
-        // Get or generate token
-        // If backend doesn't have a dedicated token endpoint yet, use ID as fallback for MVP
-        const code = res.data.id ? res.data.id.toString().padStart(6, '0') : 'ERR-00';
-        setQrCode(code);
-    } catch (err) { console.error(err); setQrCode('ERROR'); }
+        // 2. FIXED: Requests a genuine, authenticated 6-digit authorization token
+        // to pass the IsPartnerUser contract check upon partner validation scans.
+        const res = await api.post('/api/spaces/generate-token/');
+        if (res.data && res.data.code) {
+            setCode(res.data.code);
+            setMeta(res.data.meta);
+        }
+    } catch (err) { 
+        console.error("Token System Error:", err.response?.data || err.message);
+        // If it's a 403 because they have no active plan, show the descriptive error
+        setCode(err.response?.data?.error ? 'NO_PLAN' : 'ERROR'); 
+    } finally {
+        setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchToken(); }, []);
+  useEffect(() => { 
+    fetchActiveToken(); 
+  }, []);
 
   return (
     <AppLayout activePage="checkin">
@@ -34,9 +47,9 @@ export default function CheckInPage() {
         </div>
         
         <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] p-8 rounded-sm shadow-xl flex flex-col items-center">
-             {/* NUMERIC CODE (Requested Feature) */}
+             {/* NUMERIC CODE */}
              <div className="text-4xl font-mono font-bold text-[var(--color-accent)] tracking-[0.2em] mb-4 text-center border-b border-[var(--border-color)] pb-4 w-full">
-                {qrCode}
+                {code}
              </div>
 
              {/* QR Placeholder */}
@@ -45,12 +58,23 @@ export default function CheckInPage() {
              </div>
 
              <div className="text-center mb-6">
-                <div className="text-[var(--text-main)] font-mono font-bold uppercase">{user?.username}</div>
-                <div className="text-[var(--text-muted)] font-mono text-xs mt-1">{user?.subscription?.plan?.name || 'NO_PLAN'}</div>
+                <div className="text-[var(--text-main)] font-mono font-bold uppercase">{user?.username || user?.email || 'NOMAD'}</div>
+                <div className="text-[var(--text-muted)] font-mono text-xs mt-1 uppercase">
+                    {meta ? `PLAN: ${meta.plan}` : (user?.plan_name || 'SYNCING...')}
+                </div>
+                {meta && (
+                  <div className="text-[var(--text-muted)] font-mono text-[10px] mt-2 border-t border-dashed border-[var(--border-color)] pt-2">
+                    BALANCE: {meta.days_total >= 999 ? 'UNLIMITED' : `${meta.days_total - meta.days_used} DAYS`}
+                  </div>
+                )}
              </div>
              
-             <button onClick={fetchToken} className="flex items-center text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)]">
-                <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
+             <button 
+                onClick={fetchActiveToken} 
+                disabled={loading}
+                className="flex items-center text-[10px] font-mono text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50"
+             >
+                <RefreshCw className={`w-3 h-3 mr-2 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'SYNCING...' : 'REFRESH'}
              </button>
         </div>
       </div>
