@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../lib/api'; // FIXED: Using global api client with interceptor
 import Head from 'next/head';
 import AppLayout from '../components/AppLayout';
-import { MapPin, Wifi, Coffee, Zap, Search, Filter, Cpu, Battery, X } from 'lucide-react';
+import { MapPin, Wifi, Coffee, Zap, X } from 'lucide-react';
 
 const Badge = ({ children, variant = 'default' }) => {
   const styles = variant === 'premium' 
@@ -27,13 +27,10 @@ export default function SpacesPage() {
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState(null);
 
-  const getBaseUrl = () => process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-
   useEffect(() => {
     const fetchSpaces = async () => {
         try {
-            const response = await axios.get(`${getBaseUrl()}/api/spaces/`);
-            // Only set if we actually have data, otherwise fallback
+            const response = await api.get('/api/spaces/');
             if (response.data && response.data.length > 0) {
                 setSpaces(response.data);
                 setFilteredSpaces(response.data);
@@ -41,8 +38,7 @@ export default function SpacesPage() {
                 throw new Error("EMPTY_DATA");
             }
         } catch (err) {
-            console.warn("API unavailable or empty. Loading core network nodes...");
-            // Comprehensive fallback with all 7 nodes to prevent empty UI
+            console.warn("API empty or offline. Loading core network nodes...");
             const fallback = [
                 { id: 1, name: "Seb's Hub", address: "32 Awolowo Ave, Bodija", access_tier: "PREMIUM", amenities: ["AC", "WiFi"] },
                 { id: 2, name: "Worknub", address: "West One, Agodi GRA", access_tier: "PREMIUM", amenities: ["AC", "WiFi"] },
@@ -76,22 +72,13 @@ export default function SpacesPage() {
     setIsBooking(true);
     setError(null);
     try {
-        const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
-        if (!token) throw new Error("AUTH_REQUIRED: Please log in again.");
-
-        const response = await axios.post(
-            `${getBaseUrl()}/api/spaces/generate-token/`, 
-            { space_id: spaceId },
-            { 
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                } 
-            }
-        );
+        // FIXED: Replaced standard duplicate axios config blocks to leverage interceptors safely
+        const response = await api.post('/api/spaces/generate-token/', { 
+            space_id: spaceId 
+        });
         setBookingToken(response.data);
     } catch (err) {
-        const msg = err.response?.data?.error || err.message;
+        const msg = err.response?.data?.error || err.response?.data?.detail || err.message;
         setError(`ACCESS_DENIED: ${msg}`);
         setTimeout(() => setError(null), 5000);
     } finally {
