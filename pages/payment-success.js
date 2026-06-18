@@ -5,11 +5,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function PaymentSuccessPage() {
   
-  // After 3 seconds, send them to the app
+  // FIXED: Redirect to the functional user dashboard route instead of the dead 404 /app path
   useEffect(() => {
-    setTimeout(() => {
-      Router.push('/app');
+    const timer = setTimeout(() => {
+      Router.push('/dashboard');
     }, 3000);
+    return () => clearTimeout(timer); // Clean up timeout on unmount
   }, []);
 
   return (
@@ -27,7 +28,7 @@ export default function PaymentSuccessPage() {
             Your subscription is now active. Welcome to Workspace Africa!
           </p>
           <p className="mt-4 text-sm text-center text-muted-foreground">
-            Redirecting you to the app...
+            Redirecting to dashboard...
           </p>
         </CardContent>
       </Card>
