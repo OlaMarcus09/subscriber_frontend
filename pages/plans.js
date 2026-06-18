@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head'; 
+import axios from 'axios';
 import Router from 'next/router';
 import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import api from '../lib/api'; // FIXED: Switched to centralized API client
 
 // Dynamically load Paystack
 const PaystackButton = dynamic(
@@ -14,21 +14,22 @@ const PaystackButton = dynamic(
 
 // --- CONFIGURATION ---
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
+const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
 // --- PLAN CODES (Must match Backend Database) ---
 const PLANS = {
     basic: { 
-        code: 'PLN_qhytgtizn15iepe', // Flex Basic
+        code: 'PLN_qhytgtizn15iepe', 
         price: 27000, 
         name: 'Flex Basic' 
     },
     pro: { 
-        code: 'PLN_31ksupido3h8d0b', // Flex Pro
+        code: 'PLN_31ksupido3h8d0b', 
         price: 55000, 
         name: 'Flex Pro' 
     },
     unlimited: { 
-        code: 'PLN_28x17xi3up6miwc', // Flex Unlimited
+        code: 'PLN_28x17xi3up6miwc', 
         price: 90000, 
         name: 'Flex Unlimited' 
     }
@@ -40,17 +41,20 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
     
     const handleSuccess = (reference) => {
         setActivating(true);
-        // Verify payment with backend using centralized API client
-        api.get(`/api/payments/verify/?reference=${reference.reference}`)
-            .then(() => {
-                alert("Payment Successful! Subscription Activated.");
-                Router.push('/profile');
-            })
-            .catch(err => {
-                console.error("Verification failed", err);
-                alert("Payment successful at Paystack, but activation failed. Contact support with ref: " + reference.reference);
-                setActivating(false);
-            });
+        const token = localStorage.getItem('accessToken');
+        
+        axios.get(`${API_URL}/api/payments/verify/?reference=${reference.reference}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(() => {
+            alert("Payment Successful! Subscription Activated.");
+            Router.push('/profile');
+        })
+        .catch(err => {
+            console.error("Verification failed", err);
+            alert("Payment successful at Paystack, but activation failed. Contact support with ref: " + reference.reference);
+            setActivating(false);
+        });
     };
 
     const handleClose = () => {
@@ -102,7 +106,7 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
                         </span>
                     </>
                  ) : (
-                    <span className="text-red-500">SESSION EXP</span>
+                    <span className="text-red-500">AUTH FAILED</span>
                  )}
             </div>
         </div>
@@ -117,12 +121,18 @@ export default function PlansPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // FIXED: Replaced raw axios with your global API client
-        const response = await api.get('/api/users/me/');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+             Router.push('/');
+             return;
+        }
+        // FIXED: Restored your explicit explicit token passing logic
+        const response = await axios.get(`${API_URL}/api/users/me/`, {
+             headers: { Authorization: `Bearer ${token}` }
+        });
         setUser(response.data);
       } catch (err) {
         console.error("Failed to load user:", err);
-        // Fallback catch to boot unauthenticated sessions
         if (err.response?.status === 401) {
             localStorage.removeItem('accessToken');
             Router.push('/');
@@ -214,7 +224,7 @@ export default function PlansPage() {
                             <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">PURCHASE PASS</span>
                         </>
                     ) : (
-                        <span className="text-red-500">SESSION EXP</span>
+                        <span className="text-red-500">AUTH FAILED</span>
                     )}
                 </div>
             </div>
