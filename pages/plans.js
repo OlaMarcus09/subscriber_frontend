@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head'; 
-import axios from 'axios';
 import Router from 'next/router';
 import AppLayout from '../components/AppLayout';
 import { Check, Zap, QrCode, Shield, Infinity, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import api from '../lib/api'; // FIXED: Switched to centralized API client
 
 // Dynamically load Paystack
 const PaystackButton = dynamic(
@@ -13,9 +13,7 @@ const PaystackButton = dynamic(
 );
 
 // --- CONFIGURATION ---
-// Ensure you use the LIVE key if your plans are on Live Mode
 const publicKey = 'pk_test_33ced6d752ba6716b596d2d5159231e7b23d87c7'; 
-const API_URL = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || 'https://workspace-africa-backend.vercel.app';
 
 // --- PLAN CODES (Must match Backend Database) ---
 const PLANS = {
@@ -36,14 +34,14 @@ const PLANS = {
     }
 };
 
-const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false, user }) => {
+const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = false, user, loading }) => {
     const plan = PLANS[planKey];
     const [activating, setActivating] = useState(false);
     
     const handleSuccess = (reference) => {
         setActivating(true);
-        // Verify payment with backend
-        axios.get(`${API_URL}/api/payments/verify/?reference=${reference.reference}`)
+        // Verify payment with backend using centralized API client
+        api.get(`/api/payments/verify/?reference=${reference.reference}`)
             .then(() => {
                 alert("Payment Successful! Subscription Activated.");
                 Router.push('/profile');
@@ -92,7 +90,11 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
             </ul>
             
             <div className="w-full py-3 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold hover:opacity-90 transition-all uppercase text-center cursor-pointer shadow-lg relative group border border-[var(--text-main)]">
-                 {user ? (
+                 {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> SYNCING...
+                    </span>
+                 ) : user ? (
                     <>
                         <PaystackButton {...componentProps} className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-20" />
                         <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">
@@ -100,9 +102,7 @@ const PlanCard = ({ planKey, days, tier, features, icon: Icon, recommended = fal
                         </span>
                     </>
                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" /> LOADING...
-                    </span>
+                    <span className="text-red-500">SESSION EXP</span>
                  )}
             </div>
         </div>
@@ -117,18 +117,13 @@ export default function PlansPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-             Router.push('/');
-             return;
-        }
-        const response = await axios.get(`${API_URL}/api/users/me/`, {
-             headers: { Authorization: `Bearer ${token}` }
-        });
+        // FIXED: Replaced raw axios with your global API client
+        const response = await api.get('/api/users/me/');
         setUser(response.data);
       } catch (err) {
         console.error("Failed to load user:", err);
-        if (err.response && err.response.status === 401) {
+        // Fallback catch to boot unauthenticated sessions
+        if (err.response?.status === 401) {
             localStorage.removeItem('accessToken');
             Router.push('/');
         }
@@ -167,6 +162,7 @@ export default function PlansPage() {
                 features={["Community WiFi"]}
                 icon={Shield}
                 user={user}
+                loading={loading}
             />
             <PlanCard 
                 planKey="pro" 
@@ -176,6 +172,7 @@ export default function PlansPage() {
                 icon={Zap}
                 recommended={true}
                 user={user}
+                loading={loading}
             />
             <PlanCard 
                 planKey="unlimited" 
@@ -184,6 +181,7 @@ export default function PlansPage() {
                 features={["Guest Passes (2/mo)", "Dedicated Locker"]}
                 icon={Infinity}
                 user={user}
+                loading={loading}
             />
         </div>
       )}
@@ -200,7 +198,9 @@ export default function PlansPage() {
                 </div>
                 
                 <div className="w-full py-4 bg-[var(--text-main)] text-[var(--bg-surface)] font-mono text-xs font-bold uppercase hover:opacity-90 transition-all flex items-center justify-center cursor-pointer relative group">
-                    {user ? (
+                    {loading ? (
+                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/> SYNCING...</span>
+                    ) : user ? (
                         <>
                             <PaystackButton 
                                 className="w-full h-full absolute inset-0 opacity-0 cursor-pointer z-20"
@@ -214,7 +214,7 @@ export default function PlansPage() {
                             <span className="pointer-events-none relative z-10 group-hover:tracking-wider transition-all">PURCHASE PASS</span>
                         </>
                     ) : (
-                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/> LOADING...</span>
+                        <span className="text-red-500">SESSION EXP</span>
                     )}
                 </div>
             </div>
